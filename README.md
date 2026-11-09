@@ -8,4 +8,4 @@ Simulación web interactiva que muestra cómo se aproxima una integral definida 
 
 ## Sitio publicado
 
-_Pendiente de despliegue en Vercel._
+https://monte-carlo-calculo.vercel.app
