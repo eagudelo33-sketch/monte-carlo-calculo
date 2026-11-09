@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monte Carlo: integrales con dardos</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dde1e8;--accent:#2a6fdb;--accent-soft:rgba(42,111,219,.10);--hit:#16955a;--miss:#d64545;--rect:#8a93a6;--chip:#eef2f8}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--muted:#9aa3b5;--line:#2e3542;--accent:#6ea1ff;--accent-soft:rgba(110,161,255,.13);--hit:#3cc884;--miss:#ff6b6b;--rect:#7d8699;--chip:#252c38}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:980px;margin:0 auto;padding:22px 16px 48px}
+h1{font-size:1.55rem;margin:0 0 2px;letter-spacing:-.01em}
+h2{font-size:1.05rem;margin:0 0 10px}
+.sub{color:var(--muted);margin:0 0 16px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.formula{font-family:"Cambria Math","Times New Roman",serif;font-size:1.15rem;background:var(--chip);padding:8px 12px;border-radius:8px;display:inline-block;margin:6px 0}
+.muted{color:var(--muted)}
+.plot{position:relative;width:100%;height:330px}
+.plot canvas{position:absolute;inset:0;width:100%;height:100%}
+#conv,#riem{width:100%;height:220px;display:block}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.btn{border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:active{transform:translateY(1px)}
+label.inline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem}
+input[type=range]{accent-color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
+.stat{background:var(--chip);border-radius:10px;padding:8px 10px}
+.stat .k{font-size:.78rem;color:var(--muted)}
+.stat .v{font-size:1.15rem;font-variant-numeric:tabular-nums;font-weight:600}
+.v.hit{color:var(--hit)} .v.miss{color:var(--miss)}
+.step{margin-top:10px;font-variant-numeric:tabular-nums;background:var(--accent-soft);border-radius:8px;padding:8px 12px}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}
+.sliders label{display:block;font-size:.88rem;color:var(--muted)}
+.sliders input{width:100%}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums;font-size:.92rem}
+th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td.win{color:var(--hit);font-weight:600}
+.legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted);margin-top:6px;flex-wrap:wrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+ol{margin:6px 0 0;padding-left:20px}
+@media (max-width:600px){.plot{height:260px}#conv,#riem{height:190px}h1{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Monte Carlo: integrales con dardos 🎯</h1>
+  <p class="sub">Cálculo II · ¿Cómo calcula una computadora una integral que no se puede resolver a mano?</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <section class="card" id="info"></section>
+
+  <section class="card">
+    <h2>1 · Lanzamiento de puntos</h2>
+    <div class="plot"><canvas id="base"></canvas><canvas id="pts"></canvas></div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--hit)"></span>Debajo de la curva (acierto)</span>
+      <span><span class="dot" style="background:var(--miss)"></span>Encima (fallo)</span>
+      <span>– – Rectángulo de referencia</span>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="play">▶ Animar</button>
+      <button class="btn" data-add="1">+1</button>
+      <button class="btn" data-add="100">+100</button>
+      <button class="btn" data-add="10000">+10 000</button>
+      <button class="btn" id="reset">↺ Reiniciar</button>
+      <label class="inline">Velocidad <input type="range" id="speed" min="0" max="100" value="45"></label>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Puntos lanzados (N)</div><div class="v" id="sN">0</div></div>
+      <div class="stat"><div class="k">Aciertos</div><div class="v hit" id="sH">0</div></div>
+      <div class="stat"><div class="k">Estimación</div><div class="v" id="sE">—</div></div>
+      <div class="stat"><div class="k">Valor real</div><div class="v" id="sR">—</div></div>
+      <div class="stat"><div class="k">Error</div><div class="v miss" id="sErr">—</div></div>
+    </div>
+    <div class="step" id="step"></div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Convergencia: la estimación se acerca al valor real</h2>
+    <canvas id="conv"></canvas>
+    <p class="muted" style="margin:8px 0 0;font-size:.9rem">Eje horizontal en escala logarítmica (1, 10, 100, 1000…). La línea punteada es el valor real.</p>
+  </section>
+
+  <section class="card">
+    <h2>3 · Comparación con sumas de Riemann</h2>
+    <canvas id="riem"></canvas>
+    <div class="controls">
+      <label class="inline">Rectángulos n = <b id="nLbl">8</b> <input type="range" id="nR" min="1" max="100" value="8"></label>
+      <label class="inline">Punto de muestra
+        <select id="mR" class="btn"><option value="L">Izquierda</option><option value="M" selected>Punto medio</option><option value="R">Derecha</option></select>
+      </label>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Suma de Riemann</div><div class="v" id="rV">—</div></div>
+      <div class="stat"><div class="k">Error Riemann</div><div class="v miss" id="rE">—</div></div>
+    </div>
+    <div class="controls"><button class="btn primary" id="raceBtn">🏁 Carrera de métodos</button></div>
+    <div id="race"></div>
+  </section>
+
+  <section class="card">
+    <h2>¿Cómo funciona?</h2>
+    <ol>
+      <li>Se encierra la región bajo la curva en un rectángulo de área conocida: base (b − a) y altura h.</li>
+      <li>Se generan N puntos aleatorios (x, y) dentro del rectángulo.</li>
+      <li>Un punto es <b>acierto</b> si y &lt; f(x), es decir, si cae debajo de la curva.</li>
+      <li>La fracción de aciertos aproxima la fracción del rectángulo que ocupa el área buscada:
+        <div class="formula">∫<sub>a</sub><sup>b</sup> f(x) dx ≈ (b − a) · h · aciertos / N</div></li>
+      <li>Con más puntos, la estimación se acerca al valor real (ley de los grandes números), pero lentamente: para ganar 10× de precisión se necesitan unos 100× más puntos.</li>
+    </ol>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const SQ2PI = Math.sqrt(2 * Math.PI);
+const P = { mu: 3.5, sigma: 0.6, c: 4.0 };
+const pdf = x => Math.exp(-((x - P.mu) ** 2) / (2 * P.sigma ** 2)) / (P.sigma * SQ2PI);
+function midpointRef(f, a, b, n) { const dx = (b - a) / n; let s = 0; for (let i = 0; i < n; i++) s += f(a + (i + .5) * dx); return s * dx; }
+
+const MODES = {
+  pi: {
+    tab: 'Estimar π',
+    info: () => `<h2>Estimar π con un cuarto de círculo</h2>
+      <p>El cuarto de círculo de radio 1 tiene área π/4. Si lanzamos puntos al azar dentro del cuadrado 1 × 1, la fracción que cae dentro del círculo se acerca a π/4.</p>
+      <div class="formula">π = 4 · ∫<sub>0</sub><sup>1</sup> √(1 − x²) dx</div>`,
+    cfg: () => ({ f: x => Math.sqrt(Math.max(0, 1 - x * x)), a: 0, b: 1, h: 1, scale: 4, exact: Math.PI, xmin: 0, xmax: 1, ymax: 1.08, pct: false })
+  },
+  sen: {
+    tab: 'Validar: ∫ sen x',
+    info: () => `<h2>Validación con una integral conocida</h2>
+      <p>Esta integral se resuelve a mano con el teorema fundamental del cálculo. Sirve para comprobar que el método funciona antes de usarlo en un caso que no se puede resolver a mano.</p>
+      <div class="formula">∫<sub>0</sub><sup>π</sup> sen x dx = [−cos x]<sub>0</sub><sup>π</sup> = 1 − (−1) = 2</div>`,
+    cfg: () => ({ f: Math.sin, a: 0, b: Math.PI, h: 1, scale: 1, exact: 2, xmin: 0, xmax: Math.PI, ymax: 1.08, pct: false })
+  },
+  gauss: {
+    tab: 'Campana de Gauss',
+    info: () => `<h2>Una integral imposible a mano</h2>
+      <p>La función e<sup>−x²</sup> <b>no tiene antiderivada</b> expresable con funciones elementales, así que ninguna técnica de integración del curso la resuelve. La computadora sí puede aproximarla.</p>
+      <div class="formula">∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx ≈ 0.882081</div>`,
+    cfg: () => ({ f: x => Math.exp(-x * x), a: 0, b: 2, h: 1, scale: 1, exact: 0.8820813907624217, xmin: -2.5, xmax: 2.5, ymax: 1.08, pct: false })
+  },
+  notas: {
+    tab: 'Aplicación: notas',
+    info: () => `<h2>¿Qué porcentaje del grupo saca más de ${P.c.toFixed(1)}?</h2>
+      <p>Si las notas (de 0 a 5) siguen una campana de Gauss con media μ y desviación σ, la probabilidad de sacar al menos la nota c es el <b>área bajo la curva de densidad</b> entre c y 5.0.</p>
+      <div class="formula">P(nota ≥ c) = ∫<sub>c</sub><sup>5</sup> <span style="white-space:nowrap">1/(σ√2π) · e<sup>−(x−μ)²/(2σ²)</sup></span> dx</div>
+      <div class="sliders">
+        <label>Media μ = <b id="muL">${P.mu.toFixed(1)}</b><input type="range" id="mu" min="2.5" max="4.5" step="0.1" value="${P.mu}"></label>
+        <label>Desviación σ = <b id="sgL">${P.sigma.toFixed(2)}</b><input type="range" id="sg" min="0.2" max="1.2" step="0.05" value="${P.sigma}"></label>
+        <label>Nota mínima c = <b id="cL">${P.c.toFixed(1)}</b><input type="range" id="cc" min="3.0" max="4.8" step="0.1" value="${P.c}"></label>
+      </div>`,
+    cfg: () => {
+      const h = P.c >= P.mu ? pdf(P.c) : pdf(P.mu);
+      return { f: pdf, a: P.c, b: 5, h, scale: 1, exact: midpointRef(pdf, P.c, 5, 400000), xmin: 0, xmax: 5, ymax: pdf(P.mu) * 1.12, pct: true };
+    }
+  }
+};
+
+let mode = 'pi', C = MODES.pi.cfg();
+let N = 0, hits = 0, ptsStore = [], hist = [], nextRec = 1, running = false;
+const MAXSTORE = 60000;
+
+const fmt = v => C.pct ? (v * 100).toFixed(2) + ' %' : v.toFixed(5);
+const fmtErr = e => {
+  const v = C.pct ? e * 100 : e;
+  const s = v === 0 ? '0' : v < 0.001 ? v.toExponential(1) : v.toFixed(4);
+  return s + (C.pct ? ' pp' : '');
+};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function fit(cv) {
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+  const ctx = cv.getContext('2d'); ctx.setTransform(d, 0, 0, d, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+function frame(w, h, xmin, xmax, ymin, ymax) {
+  const L = 44, R = 12, T = 12, B = 26;
+  return { X: x => L + (x - xmin) / (xmax - xmin) * (w - L - R), Y: y => T + (1 - (y - ymin) / (ymax - ymin)) * (h - T - B), L, R, T, B, w, h };
+}
+function axes(ctx, F, xmin, xmax, ymin, ymax, xt, yt) {
+  ctx.strokeStyle = css('--line'); ctx.fillStyle = css('--muted'); ctx.lineWidth = 1; ctx.font = '11px system-ui';
+  ctx.beginPath(); ctx.moveTo(F.L, F.T); ctx.lineTo(F.L, F.h - F.B); ctx.lineTo(F.w - F.R, F.h - F.B); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  xt.forEach(([v, s]) => { const X = F.X(v); ctx.beginPath(); ctx.moveTo(X, F.h - F.B); ctx.lineTo(X, F.h - F.B + 4); ctx.stroke(); ctx.fillText(s, X, F.h - F.B + 6); });
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  yt.forEach(([v, s]) => { const Y = F.Y(v); ctx.beginPath(); ctx.moveTo(F.L - 4, Y); ctx.lineTo(F.L, Y); ctx.stroke(); ctx.fillText(s, F.L - 6, Y); });
+}
+const ticks = (a, b, n, dig) => Array.from({ length: n + 1 }, (_, i) => { const v = a + (b - a) * i / n; return [v, +v.toFixed(dig) + '']; });
+
+function drawCurve(ctx, F, f, x0, x1) {
+  ctx.beginPath();
+  for (let i = 0; i <= 400; i++) { const x = x0 + (x1 - x0) * i / 400, X = F.X(x), Y = F.Y(f(x)); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
+  ctx.strokeStyle = css('--accent'); ctx.lineWidth = 2.2; ctx.stroke();
+}
+
+/* ---------- Panel 1: simulation ---------- */
+let pctx, PF;
+function drawBase() {
+  const { ctx, w, h } = fit($('base'));
+  const F = frame(w, h, C.xmin, C.xmax, 0, C.ymax);
+  // shaded target area
+  ctx.beginPath(); ctx.moveTo(F.X(C.a), F.Y(0));
+  for (let i = 0; i <= 300; i++) { const x = C.a + (C.b - C.a) * i / 300; ctx.lineTo(F.X(x), F.Y(C.f(x))); }
+  ctx.lineTo(F.X(C.b), F.Y(0)); ctx.closePath(); ctx.fillStyle = css('--accent-soft'); ctx.fill();
+  axes(ctx, F, C.xmin, C.xmax, 0, C.ymax, ticks(C.xmin, C.xmax, mode === 'notas' ? 5 : 4, 2), ticks(0, C.ymax / 1.08 * (mode === 'notas' ? 1.08 / 1.12 : 1), 2, 2));
+  drawCurve(ctx, F, C.f, C.xmin, C.xmax);
+  ctx.setLineDash([6, 4]); ctx.strokeStyle = css('--rect'); ctx.lineWidth = 1.5;
+  ctx.strokeRect(F.X(C.a), F.Y(C.h), F.X(C.b) - F.X(C.a), F.Y(0) - F.Y(C.h)); ctx.setLineDash([]);
+  const p = fit($('pts')); pctx = p.ctx; PF = F;
+  redrawPoints();
+}
+function redrawPoints() {
+  pctx.clearRect(0, 0, PF.w, PF.h);
+  const hit = css('--hit'), miss = css('--miss');
+  for (const [x, y, k] of ptsStore) { pctx.fillStyle = k ? hit : miss; pctx.fillRect(PF.X(x) - 1.2, PF.Y(y) - 1.2, 2.4, 2.4); }
+}
+function addPoints(k) {
+  const hit = css('--hit'), miss = css('--miss'), w = C.b - C.a;
+  for (let i = 0; i < k; i++) {
+    const x = C.a + w * Math.random(), y = C.h * Math.random(), ok = y < C.f(x);
+    N++; if (ok) hits++;
+    if (ptsStore.length < MAXSTORE) { ptsStore.push([x, y, ok]); pctx.fillStyle = ok ? hit : miss; pctx.fillRect(PF.X(x) - 1.2, PF.Y(y) - 1.2, 2.4, 2.4); }
+    if (N >= nextRec) { hist.push([N, estimate()]); nextRec = Math.max(N + 1, Math.floor(N * 1.03)); }
+  }
+  updateStats(); drawConv();
+}
+const estimate = () => N ? C.scale * (C.b - C.a) * C.h * hits / N : NaN;
+function updateStats() {
+  $('sN').textContent = N.toLocaleString('es-CO');
+  $('sH').textContent = hits.toLocaleString('es-CO');
+  $('sR').textContent = fmt(C.exact);
+  if (!N) { $('sE').textContent = '—'; $('sErr').textContent = '—'; $('step').innerHTML = 'Presiona <b>Animar</b> o lanza puntos para empezar.'; return; }
+  const e = estimate();
+  $('sE').textContent = fmt(e);
+  $('sErr').textContent = fmtErr(Math.abs(e - C.exact)) + ` (${(Math.abs(e - C.exact) / C.exact * 100).toFixed(2)} %)`;
+  const area = (C.b - C.a) * C.h;
+  $('step').innerHTML = `Área ≈ ${C.scale !== 1 ? C.scale + ' × ' : ''}(b − a)·h × aciertos/N = ${C.scale !== 1 ? C.scale + ' × ' : ''}${area.toFixed(4)} × ${hits}/${N} = <b>${fmt(e)}</b>`;
+}
+
+/* ---------- Panel 2: convergence ---------- */
+function drawConv() {
+  const { ctx, w, h } = fit($('conv'));
+  const maxN = Math.max(100, N), lx = Math.log10(maxN);
+  let dev = 0; for (const [n, e] of hist) if (n >= 20) dev = Math.max(dev, Math.abs(e - C.exact));
+  dev = Math.max(dev, Math.abs(C.exact) * 0.03) * 1.15;
+  const y0 = C.exact - dev, y1 = C.exact + dev;
+  const F = frame(w, h, 0, lx, y0, y1);
+  const xt = []; for (let p = 0; p <= Math.floor(lx); p++) xt.push([p, (10 ** p).toLocaleString('es-CO')]);
+  const yt = [y0, C.exact, y1].map(v => [v, C.pct ? (v * 100).toFixed(1) + '%' : v.toFixed(3)]);
+  axes(ctx, F, 0, lx, y0, y1, xt, yt);
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = css('--hit'); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(F.L, F.Y(C.exact)); ctx.lineTo(w - F.R, F.Y(C.exact)); ctx.stroke(); ctx.setLineDash([]);
+  if (hist.length) {
+    ctx.save(); ctx.beginPath(); ctx.rect(F.L, F.T, w - F.L - F.R, h - F.T - F.B); ctx.clip();
+    ctx.beginPath(); hist.forEach(([n, e], i) => { const X = F.X(Math.log10(n)), Y = F.Y(e); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
+    ctx.strokeStyle = css('--accent'); ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+  } else {
+    ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.font = '13px system-ui';
+    ctx.fillText('Lanza puntos para ver la curva de convergencia', w / 2, h / 2 - 20);
+  }
+}
+
+/* ---------- Panel 3: Riemann ---------- */
+function riemann(n, m) {
+  const dx = (C.b - C.a) / n, off = m === 'L' ? 0 : m === 'R' ? 1 : .5; let s = 0;
+  for (let i = 0; i < n; i++) s += C.f(C.a + (i + off) * dx);
+  return C.scale * s * dx;
+}
+function drawRiemann() {
+  const n = +$('nR').value, m = $('mR').value; $('nLbl').textContent = n;
+  const { ctx, w, h } = fit($('riem'));
+  const F = frame(w, h, C.xmin, C.xmax, 0, C.ymax);
+  axes(ctx, F, C.xmin, C.xmax, 0, C.ymax, ticks(C.xmin, C.xmax, mode === 'notas' ? 5 : 4, 2), []);
+  const dx = (C.b - C.a) / n, off = m === 'L' ? 0 : m === 'R' ? 1 : .5;
+  for (let i = 0; i < n; i++) {
+    const x0 = C.a + i * dx, y = C.f(x0 + off * dx);
+    ctx.fillStyle = css('--accent-soft'); ctx.strokeStyle = css('--accent'); ctx.lineWidth = 1;
+    ctx.fillRect(F.X(x0), F.Y(y), F.X(x0 + dx) - F.X(x0), F.Y(0) - F.Y(y));
+    if (n <= 60) ctx.strokeRect(F.X(x0), F.Y(y), F.X(x0 + dx) - F.X(x0), F.Y(0) - F.Y(y));
+  }
+  drawCurve(ctx, F, C.f, C.xmin, C.xmax);
+  const r = riemann(n, m);
+  $('rV').textContent = fmt(r); $('rE').textContent = fmtErr(Math.abs(r - C.exact));
+}
+function race() {
+  $('race').innerHTML = '<p class="muted">Calculando…</p>';
+  setTimeout(() => {
+    const ns = [10, 100, 1000, 10000, 100000], runs = 5, w = C.b - C.a;
+    let rows = '';
+    for (const n of ns) {
+      const er = Math.abs(riemann(n, 'M') - C.exact);
+      let em = 0;
+      for (let r = 0; r < runs; r++) { let k = 0; for (let i = 0; i < n; i++) { const x = C.a + w * Math.random(); if (C.h * Math.random() < C.f(x)) k++; } em += Math.abs(C.scale * w * C.h * k / n - C.exact); }
+      em /= runs;
+      rows += `<tr><td>${n.toLocaleString('es-CO')}</td><td class="${er <= em ? 'win' : ''}">${fmtErr(er)}</td><td class="${em < er ? 'win' : ''}">${fmtErr(em)}</td></tr>`;
+    }
+    $('race').innerHTML = `<table><tr><th>n (rectángulos o puntos)</th><th>Error Riemann (punto medio)</th><th>Error Monte Carlo (prom. ${runs} corridas)</th></tr>${rows}</table>
+      <p class="muted" style="font-size:.9rem;margin:8px 0 0">En una sola variable, Riemann gana con mucha ventaja. Monte Carlo mejora más despacio (10× más precisión ≈ 100× más puntos), pero su velocidad no empeora cuando la integral tiene muchas variables. Por eso se usa en gráficos 3D, finanzas e inteligencia artificial.</p>`;
+  }, 30);
+}
+
+/* ---------- wiring ---------- */
+function reset() { N = 0; hits = 0; ptsStore = []; hist = []; nextRec = 1; drawBase(); updateStats(); drawConv(); $('race').innerHTML = ''; }
+function setMode(m) {
+  mode = m; C = MODES[m].cfg();
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  $('info').innerHTML = MODES[m].info();
+  if (m === 'notas') {
+    const bind = (id, key, lbl, d) => $(id).addEventListener('input', e => {
+      P[key] = +e.target.value; $(lbl).textContent = P[key].toFixed(d);
+      C = MODES.notas.cfg(); $('info').querySelector('h2').textContent = `¿Qué porcentaje del grupo saca más de ${P.c.toFixed(1)}?`;
+      reset(); drawRiemann();
+    });
+    bind('mu', 'mu', 'muL', 1); bind('sg', 'sigma', 'sgL', 2); bind('cc', 'c', 'cL', 1);
+  }
+  reset(); drawRiemann();
+}
+Object.entries(MODES).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v.tab; b.dataset.m = k; b.onclick = () => setMode(k); $('tabs').appendChild(b); });
+document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => addPoints(+b.dataset.add));
+$('reset').onclick = () => { stop(); reset(); };
+const speed = () => Math.max(1, Math.round(10 ** ($('speed').value / 100 * 3.3)));
+function loop() { if (!running) return; addPoints(speed()); requestAnimationFrame(loop); }
+function stop() { running = false; $('play').textContent = '▶ Animar'; }
+$('play').onclick = () => { if (running) stop(); else { running = true; $('play').textContent = '⏸ Pausar'; loop(); } };
+$('nR').oninput = drawRiemann; $('mR').onchange = drawRiemann;
+$('raceBtn').onclick = race;
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawBase(); drawConv(); drawRiemann(); }, 120); });
+setMode('pi');
+</script>
+</body>
+</html>

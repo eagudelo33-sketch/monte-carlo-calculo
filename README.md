@@ -11,3 +11,8 @@ Simulación web interactiva que muestra cómo se aproxima una integral definida 
 https://monte-carlo-calculo.vercel.app
 
 Cada `git push` a `main` vuelve a desplegar el sitio automáticamente.
+
+## Versiones
+
+- **v2** (actual): normal truncada en el escenario de notas, intervalo de confianza del 95 %, banda de convergencia, serie de potencias para la Gaussiana, carrera con 20 corridas (RMSE) y orden observado, fundamento matemático y aclaraciones al informe.
+- **v1** (original): disponible en `/v1/` del sitio y en la etiqueta de Git `v1.0`.

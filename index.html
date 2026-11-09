@@ -5,46 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monte Carlo: integrales con dardos</title>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dde1e8;--accent:#2a6fdb;--accent-soft:rgba(42,111,219,.10);--hit:#16955a;--miss:#d64545;--rect:#8a93a6;--chip:#eef2f8}
-@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--muted:#9aa3b5;--line:#2e3542;--accent:#6ea1ff;--accent-soft:rgba(110,161,255,.13);--hit:#3cc884;--miss:#ff6b6b;--rect:#7d8699;--chip:#252c38}}
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dde1e8;--accent:#2a6fdb;--accent-soft:rgba(42,111,219,.10);--hit:#16955a;--miss:#d64545;--rect:#8a93a6;--chip:#eef2f8;--band:rgba(22,149,90,.13);--warn:#fff4e0;--warn-ink:#7a4b00}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--muted:#9aa3b5;--line:#2e3542;--accent:#6ea1ff;--accent-soft:rgba(110,161,255,.13);--hit:#3cc884;--miss:#ff6b6b;--rect:#7d8699;--chip:#252c38;--band:rgba(60,200,132,.15);--warn:#3a2e17;--warn-ink:#ffd38a}}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
 main{max-width:980px;margin:0 auto;padding:22px 16px 48px}
 h1{font-size:1.55rem;margin:0 0 2px;letter-spacing:-.01em}
 h2{font-size:1.05rem;margin:0 0 10px}
+h3{font-size:.98rem;margin:14px 0 6px}
+a{color:var(--accent)}
 .sub{color:var(--muted);margin:0 0 16px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer}
 .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.formula{font-family:"Cambria Math","Times New Roman",serif;font-size:1.15rem;background:var(--chip);padding:8px 12px;border-radius:8px;display:inline-block;margin:6px 0}
+.formula{font-family:"Cambria Math","Times New Roman",serif;font-size:1.15rem;background:var(--chip);padding:8px 12px;border-radius:8px;display:inline-block;margin:6px 0;max-width:100%;overflow-x:auto}
 .muted{color:var(--muted)}
+.small{font-size:.88rem}
+.note{background:var(--warn);color:var(--warn-ink);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:.9rem}
 .plot{position:relative;width:100%;height:330px}
 .plot canvas{position:absolute;inset:0;width:100%;height:100%}
 #conv,#riem{width:100%;height:220px;display:block}
 .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
-.btn{border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer;max-width:100%}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn:active{transform:translateY(1px)}
-label.inline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem}
+label.inline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem;flex-wrap:wrap}
 input[type=range]{accent-color:var(--accent)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
 .stat{background:var(--chip);border-radius:10px;padding:8px 10px}
+.stat.wide{grid-column:span 2}
 .stat .k{font-size:.78rem;color:var(--muted)}
 .stat .v{font-size:1.15rem;font-variant-numeric:tabular-nums;font-weight:600}
 .v.hit{color:var(--hit)} .v.miss{color:var(--miss)}
-.step{margin-top:10px;font-variant-numeric:tabular-nums;background:var(--accent-soft);border-radius:8px;padding:8px 12px}
+.step{margin-top:10px;font-variant-numeric:tabular-nums;background:var(--accent-soft);border-radius:8px;padding:8px 12px;overflow-x:auto}
 .sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}
 .sliders label{display:block;font-size:.88rem;color:var(--muted)}
 .sliders input{width:100%}
+.tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums;font-size:.92rem}
-th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;font-size:.84rem;color:var(--muted)}
 th:first-child,td:first-child{text-align:left}
 td.win{color:var(--hit);font-weight:600}
 .legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted);margin-top:6px;flex-wrap:wrap}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
-ol{margin:6px 0 0;padding-left:20px}
-@media (max-width:600px){.plot{height:260px}#conv,#riem{height:190px}h1{font-size:1.3rem}}
+ol,ul{margin:6px 0 0;padding-left:20px}
+li{margin-bottom:6px}
+details{border-top:1px solid var(--line);padding:8px 0}
+details:last-child{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600}
+details > *:not(summary){margin-top:8px}
+.foot{text-align:center;font-size:.85rem}
+@media (max-width:600px){.plot{height:260px}#conv,#riem{height:190px}h1{font-size:1.3rem}.stat.wide{grid-column:span 1}}
 </style>
 </head>
 <body>
@@ -74,18 +87,20 @@ ol{margin:6px 0 0;padding-left:20px}
     </div>
     <div class="stats">
       <div class="stat"><div class="k">Puntos lanzados (N)</div><div class="v" id="sN">0</div></div>
-      <div class="stat"><div class="k">Aciertos</div><div class="v hit" id="sH">0</div></div>
+      <div class="stat"><div class="k">Aciertos (K)</div><div class="v hit" id="sH">0</div></div>
       <div class="stat"><div class="k">Estimación</div><div class="v" id="sE">—</div></div>
-      <div class="stat"><div class="k">Valor real</div><div class="v" id="sR">—</div></div>
+      <div class="stat"><div class="k">Valor de referencia</div><div class="v" id="sR">—</div></div>
       <div class="stat"><div class="k">Error</div><div class="v miss" id="sErr">—</div></div>
+      <div class="stat wide"><div class="k">Intervalo de confianza del 95 %</div><div class="v" id="sCI">—</div></div>
     </div>
     <div class="step" id="step"></div>
+    <p class="muted small" id="refNote" style="margin:8px 0 0"></p>
   </section>
 
   <section class="card">
-    <h2>2 · Convergencia: la estimación se acerca al valor real</h2>
+    <h2>2 · Convergencia: la estimación se acerca al valor de referencia</h2>
     <canvas id="conv"></canvas>
-    <p class="muted" style="margin:8px 0 0;font-size:.9rem">Eje horizontal en escala logarítmica (1, 10, 100, 1000…). La línea punteada es el valor real.</p>
+    <p class="muted small" style="margin:8px 0 0">Eje horizontal en escala logarítmica (1, 10, 100, 1 000…). La línea punteada es el valor de referencia. La <b>banda verde</b> es valor ± 1.96·σ/√N: la curva azul debería quedar dentro de ella cerca del 95 % del tiempo, y la banda se cierra como 1/√N.</p>
   </section>
 
   <section class="card">
@@ -101,6 +116,7 @@ ol{margin:6px 0 0;padding-left:20px}
       <div class="stat"><div class="k">Suma de Riemann</div><div class="v" id="rV">—</div></div>
       <div class="stat"><div class="k">Error Riemann</div><div class="v miss" id="rE">—</div></div>
     </div>
+    <p class="muted small" id="riemNote" style="margin:10px 0 0"></p>
     <div class="controls"><button class="btn primary" id="raceBtn">🏁 Carrera de métodos</button></div>
     <div id="race"></div>
   </section>
@@ -111,55 +127,168 @@ ol{margin:6px 0 0;padding-left:20px}
       <li>Se encierra la región bajo la curva en un rectángulo de área conocida: base (b − a) y altura h.</li>
       <li>Se generan N puntos aleatorios (x, y) dentro del rectángulo.</li>
       <li>Un punto es <b>acierto</b> si y &lt; f(x), es decir, si cae debajo de la curva.</li>
-      <li>La fracción de aciertos aproxima la fracción del rectángulo que ocupa el área buscada:
+      <li>La fracción de aciertos aproxima, <b>en promedio</b>, la fracción del rectángulo que ocupa el área buscada:
         <div class="formula">∫<sub>a</sub><sup>b</sup> f(x) dx ≈ (b − a) · h · aciertos / N</div></li>
       <li>Con más puntos, la estimación se acerca al valor real (ley de los grandes números), pero lentamente: para ganar 10× de precisión se necesitan unos 100× más puntos.</li>
+      <li>Sin conocer el valor exacto, el intervalo de confianza del 95 % dice qué tan buena es la estimación usando solo los datos de la simulación.</li>
     </ol>
   </section>
+
+  <section class="card">
+    <h2>Fundamento matemático: por qué contar dardos calcula una integral</h2>
+    <p class="muted small" style="margin-top:0">Notación: R = [a, b] × [0, h] es el rectángulo, |R| = (b − a)·h su área, I = ∫<sub>a</sub><sup>b</sup> f(x) dx la integral buscada y K el número de aciertos en N lanzamientos.</p>
+    <details open>
+      <summary>Demostración paso a paso</summary>
+      <ol>
+        <li><b>Probabilidad uniforme = cociente de áreas.</b> Si el punto (X, Y) se escoge con distribución uniforme en R, la probabilidad de que caiga en una región D ⊂ R es área(D) / |R|.</li>
+        <li><b>El área bajo la curva es la integral.</b> La región de aciertos es D = {(x, y) : a ≤ x ≤ b, 0 ≤ y &lt; f(x)}. Como 0 ≤ f ≤ h, D cabe en R y su área es I. Por tanto
+          <div class="formula">p = P(acierto) = I / |R|</div>
+          Otra forma de verlo: si X = x, la probabilidad de acierto es f(x)/h, y X tiene densidad 1/(b − a). Entonces p = ∫<sub>a</sub><sup>b</sup> (f(x)/h)·(1/(b − a)) dx, que es la misma expresión.</li>
+        <li><b>El estimador es insesgado.</b> K ~ Binomial(N, p) y el estimador es Î = |R|·K/N. Entonces E[Î] = |R|·p = I: en promedio, el método da exactamente la integral.</li>
+        <li><b>La varianza explica el 1/√N.</b> Var(Î) = |R|²·p(1 − p)/N, así que la desviación estándar es
+          <div class="formula">σ(Î) = |R|·√(p(1 − p)) / √N</div>
+          Lo que baja como 1/N es la varianza; el error típico es su raíz cuadrada. Por eso 10× más precisión cuesta 100× más puntos.</li>
+        <li><b>Ley de los grandes números (con la desigualdad de Chebyshev).</b> P(|Î − I| ≥ ε) ≤ Var(Î)/ε² = |R|²·p(1 − p)/(N·ε²) → 0 cuando N → ∞. Esa es la justificación rigurosa de «entre más puntos, más se acerca».</li>
+        <li><b>Intervalo de confianza (teorema central del límite).</b> Para N grande, con p̂ = K/N,
+          <div class="formula">Î ± 1.96 · |R| · √(p̂(1 − p̂) / N)</div>
+          contiene a I con probabilidad cercana al 95 %. Solo usa datos de la simulación; el panel 1 lo muestra.</li>
+      </ol>
+    </details>
+    <details>
+      <summary>¿Da lo mismo y &lt; f(x) que y ≤ f(x)?</summary>
+      <p>Sí. La gráfica de f es una curva, y una curva tiene área cero, así que la probabilidad de caer exactamente sobre ella es 0. Por el mismo motivo, en una variable continua P(X &gt; c) = P(X ≥ c).</p>
+    </details>
+    <details>
+      <summary>¿Qué pasa si h no es el máximo de f?</summary>
+      <p>Si h es <b>menor</b> que el máximo, la parte de la región que queda por encima de h nunca se cuenta y el estimador queda sesgado hacia abajo, sin importar N. Si h es <b>mayor</b>, sigue siendo insesgado, pero p baja y el error relativo, √((1 − p)/(pN)), sube. En esta aplicación h es siempre el máximo de f en [a, b], también al mover los controles.</p>
+    </details>
+    <details>
+      <summary>Una mejora: Monte Carlo de valor promedio</summary>
+      <p>Por el teorema del valor medio para integrales, I = (b − a)·f<sub>prom</sub>. Entonces se puede estimar</p>
+      <div class="formula">Î<sub>prom</sub> = (b − a) · (1/N) Σ f(x<sub>i</sub>),  con x<sub>i</sub> uniformes en [a, b]</div>
+      <p>Esto es una <b>suma de Riemann con puntos de muestra al azar</b>: el puente entre las dos mitades del proyecto. No necesita h ni la coordenada y, que solo agrega ruido. Con el mismo N tiene menos varianza que los dardos:</p>
+      <div class="tw"><table>
+        <tr><th>Escenario</th><th>Var(dardos) / Var(valor promedio)</th></tr>
+        <tr><td>π</td><td>3.38</td></tr>
+        <tr><td>∫ sen x</td><td>2.44</td></tr>
+        <tr><td>Campana de Gauss</td><td>2.08</td></tr>
+        <tr><td>Notas (μ = 3.5, σ = 0.6, c = 4.0)</td><td>3.06</td></tr>
+      </table></div>
+      <p>Es decir, equivale a lanzar entre 2 y 3.4 veces más dardos. La aplicación conserva el método de dardos porque es el más visual.</p>
+    </details>
+    <details>
+      <summary>Si Riemann gana, ¿para qué sirve Monte Carlo?</summary>
+      <p>El error de Monte Carlo es de orden N<sup>−1/2</sup> sin importar el número de variables d (la constante sí puede cambiar). Una malla de punto medio con N puntos en total en d dimensiones tiene error de orden N<sup>−2/d</sup>. Monte Carlo gana en orden cuando 1/2 &gt; 2/d, es decir, <b>cuando d &gt; 4</b>. Ejemplos reales: el renderizado 3D (integrales sobre direcciones de luz), la valoración de opciones financieras y los modelos probabilísticos en inteligencia artificial.</p>
+    </details>
+    <details>
+      <summary>Números pseudoaleatorios</summary>
+      <p>La aplicación usa el generador del navegador (<code>Math.random</code>), sin semilla: los resultados cambian en cada ejecución. El informe usó NumPy con semilla 2026, así que las cifras de la aplicación no coinciden dígito por dígito con las tablas del informe. Es lo esperado: lo que debe coincidir es el comportamiento (el error baja como 1/√N y queda dentro del intervalo de confianza).</p>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>Aclaraciones y correcciones al informe</h2>
+    <p class="muted small" style="margin-top:0">Después de entregar el informe revisamos el trabajo con más cuidado. Estas son las precisiones; la aplicación ya las incorpora.</p>
+    <ol>
+      <li><b>Notas.</b> El 19.6 % del informe es P(4 ≤ X ≤ 5) = ∫<sub>4</sub><sup>5</sup> f(x) dx, no P(X ≥ 4). Con la normal sin truncar, P(X ≥ 4) = 20.23 %; con la normal truncada a [0, 5], que es el modelo coherente con notas de 0 a 5, P(X ≥ 4) = 19.73 %. Con los valores del informe la diferencia es pequeña, pero crece al mover los controles: con μ = 4.5, σ = 1.2 y c = 3.0, la fórmula del informe da 55.59 % y el modelo truncado da 84.04 %. La pestaña «Aplicación: notas» usa ahora el modelo truncado y permite comparar con la fórmula del informe.</li>
+      <li><b>«La única opción es aproximar con métodos numéricos».</b> No es la única: la integral ∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx también se calcula con series de potencias, que son tema de Cálculo II. La pestaña «Campana de Gauss» muestra la serie.</li>
+      <li><b>«Como el exponente tiene un término al cuadrado, no tiene antiderivada elemental».</b> Ese razonamiento no es válido: x·e<sup>−x²</sup> también tiene un cuadrado en el exponente y su antiderivada es −½·e<sup>−x²</sup>. Que e<sup>−x²</sup> no tenga antiderivada elemental es un teorema (Liouville, siglo XIX), que se cita pero no se demuestra en Cálculo II.</li>
+      <li><b>El error del punto medio baja como 1/n².</b> Solo si f″ está acotada en [a, b]: la cota |E<sub>M</sub>| ≤ K(b − a)³/(24n²) exige |f″| ≤ K. En el escenario de π no lo está, porque la pendiente es vertical en x = 1, y el error baja como n<sup>−3/2</sup>. La carrera de métodos muestra el orden observado en cada escenario.</li>
+      <li><b>Repeticiones en la comparación con Riemann.</b> La aplicación promedia ahora 20 corridas, igual que el informe (la primera versión usaba 5), y reporta la raíz del error cuadrático medio (RMSE), que en teoría es σ/√n.</li>
+      <li><b>«Monte Carlo necesitó cerca de 10 000 puntos» para superar a M<sub>4</sub> en ∫ sen x.</b> Esa cifra sale de una sola corrida. En promedio basta con N ≈ (1.511 / 0.0523)² ≈ 835 puntos: del orden de mil puntos, frente a solo 4 rectángulos.</li>
+      <li><b>El error de Riemann de 1.2 × 10<sup>−12</sup> con n = 100 000</b> corresponde a ∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx.</li>
+      <li><b>«Valor exacto» en el informe</b> equivale a «valor de referencia» en la aplicación. Debajo del panel 1 se explica de dónde sale en cada escenario.</li>
+    </ol>
+  </section>
+
+  <p class="muted foot">Versión 2 · <a href="v1/">Ver la versión 1 (original)</a></p>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
 const SQ2PI = Math.sqrt(2 * Math.PI);
-const P = { mu: 3.5, sigma: 0.6, c: 4.0 };
+const P = { mu: 3.5, sigma: 0.6, c: 4.0, model: 'trunc' };
 const pdf = x => Math.exp(-((x - P.mu) ** 2) / (2 * P.sigma ** 2)) / (P.sigma * SQ2PI);
-function midpointRef(f, a, b, n) { const dx = (b - a) / n; let s = 0; for (let i = 0; i < n; i++) s += f(a + (i + .5) * dx); return s * dx; }
+// Composite Simpson rule (n even). Used for reference values: a different method from the midpoint sums it is compared against.
+function simpson(f, a, b, n) { if (b <= a) return 0; const d = (b - a) / n; let s = f(a) + f(b); for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f(a + i * d); return s * d / 3; }
+// Maclaurin series: integral from 0 to x of e^(-t^2) dt = sum (-1)^k x^(2k+1) / (k! (2k+1))
+function gaussSeries(x, terms) { let s = 0, fact = 1; for (let k = 0; k < terms; k++) { if (k) fact *= k; s += (k % 2 ? -1 : 1) * x ** (2 * k + 1) / (fact * (2 * k + 1)); } return s; }
+const GAUSS_REF = gaussSeries(2, 40);
+
+const fmtInt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+function notasModel() {
+  const raw = simpson(pdf, P.c, 5, 200000);
+  const Z = simpson(pdf, 0, 5, 200000);
+  const above = simpson(pdf, 5, Math.max(5, P.mu + 12 * P.sigma), 20000);
+  const below = simpson(pdf, Math.min(0, P.mu - 12 * P.sigma), 0, 20000);
+  return { raw, Z, above, below, trunc: raw / Z };
+}
 
 const MODES = {
   pi: {
     tab: 'Estimar π',
+    label: 'π',
     info: () => `<h2>Estimar π con un cuarto de círculo</h2>
       <p>El cuarto de círculo de radio 1 tiene área π/4. Si lanzamos puntos al azar dentro del cuadrado 1 × 1, la fracción que cae dentro del círculo se acerca a π/4.</p>
-      <div class="formula">π = 4 · ∫<sub>0</sub><sup>1</sup> √(1 − x²) dx</div>`,
+      <div class="formula">π = 4 · ∫<sub>0</sub><sup>1</sup> √(1 − x²) dx</div>
+      <p class="muted small">Un detalle importante: la pendiente de esta curva es vertical en x = 1, porque f′(x) = −x/√(1 − x²) → −∞. Por eso aquí el error del punto medio no baja como 1/n² sino como n<sup>−3/2</sup> (míralo en la carrera de métodos).</p>`,
+    ref: 'π es una constante conocida; se usa el valor de <code>Math.PI</code> con 16 cifras.',
+    riem: 'f(x) = √(1 − x²) es decreciente: la suma izquierda sobreestima y la derecha subestima. El punto medio mejora como n<sup>−3/2</sup> y no como 1/n²: la cota |E<sub>M</sub>| ≤ K(b − a)³/(24n²) exige |f″| ≤ K, y aquí f″ no está acotada cerca de x = 1.',
     cfg: () => ({ f: x => Math.sqrt(Math.max(0, 1 - x * x)), a: 0, b: 1, h: 1, scale: 4, exact: Math.PI, xmin: 0, xmax: 1, ymax: 1.08, pct: false })
   },
   sen: {
     tab: 'Validar: ∫ sen x',
+    label: 'Área',
     info: () => `<h2>Validación con una integral conocida</h2>
       <p>Esta integral se resuelve a mano con el teorema fundamental del cálculo. Sirve para comprobar que el método funciona antes de usarlo en un caso que no se puede resolver a mano.</p>
       <div class="formula">∫<sub>0</sub><sup>π</sup> sen x dx = [−cos x]<sub>0</sub><sup>π</sup> = 1 − (−1) = 2</div>`,
+    ref: 'El valor 2 se calcula a mano con el teorema fundamental del cálculo.',
+    riem: 'Aquí la suma izquierda y la derecha dan exactamente lo mismo, y no es un error: R − L = Δx·(f(b) − f(a)) = Δx·(sen π − sen 0) = 0. Cuando f(a) = f(b), las dos coinciden con la regla del trapecio; por eso su error baja como 1/n² y no como 1/n.',
     cfg: () => ({ f: Math.sin, a: 0, b: Math.PI, h: 1, scale: 1, exact: 2, xmin: 0, xmax: Math.PI, ymax: 1.08, pct: false })
   },
   gauss: {
     tab: 'Campana de Gauss',
-    info: () => `<h2>Una integral imposible a mano</h2>
-      <p>La función e<sup>−x²</sup> <b>no tiene antiderivada</b> expresable con funciones elementales, así que ninguna técnica de integración del curso la resuelve. La computadora sí puede aproximarla.</p>
-      <div class="formula">∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx ≈ 0.882081</div>`,
-    cfg: () => ({ f: x => Math.exp(-x * x), a: 0, b: 2, h: 1, scale: 1, exact: 0.8820813907624217, xmin: -2.5, xmax: 2.5, ymax: 1.08, pct: false })
+    label: 'Área',
+    info: () => {
+      const rows = [5, 10, 15, 20, 25, 30].map(k => { const s = gaussSeries(2, k), e = Math.abs(s - GAUSS_REF); return `<tr><td>${k}</td><td>${s.toFixed(12)}</td><td>${e === 0 ? '0' : e.toExponential(1)}</td></tr>`; }).join('');
+      return `<h2>Una integral sin antiderivada elemental</h2>
+      <p>La función e<sup>−x²</sup> sí tiene antiderivada: por el teorema fundamental del cálculo, F(x) = ∫<sub>0</sub><sup>x</sup> e<sup>−t²</sup> dt existe porque la función es continua. Lo que no existe es una fórmula para F con funciones <b>elementales</b> (polinomios, exponenciales, logaritmos, funciones trigonométricas y sus combinaciones). Esto es un teorema (Liouville, siglo XIX); no se debe al cuadrado del exponente, porque x·e<sup>−x²</sup> también lo tiene y su antiderivada es −½·e<sup>−x²</sup>.</p>
+      <p>Así que la regla de Barrow no sirve y hay que <b>aproximar</b>: con series de potencias, con sumas de Riemann o con Monte Carlo.</p>
+      <div class="formula">∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx ≈ 0.882081</div>
+      <h3>Con series de potencias (Cálculo II)</h3>
+      <p>Como e<sup>u</sup> = Σ u<sup>k</sup>/k!, se cambia u por −x² y se integra término a término:</p>
+      <div class="formula">∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx = Σ<sub>k≥0</sub> (−1)<sup>k</sup> · 2<sup>2k+1</sup> / (k! · (2k + 1))</div>
+      <div class="tw"><table><tr><th>Términos sumados</th><th>Suma parcial</th><th>Error</th></tr>${rows}</table></div>
+      <p class="muted small">Con 30 términos la serie alcanza la precisión de la computadora. Ese es el valor de referencia de esta pestaña.</p>`;
+    },
+    ref: 'Valor de referencia calculado con la serie de Maclaurin de e<sup>−x²</sup> integrada término a término (40 términos). Coincide con (√π/2)·erf(2) = 0.8820813907624…',
+    riem: 'f es decreciente en [0, 2]: la suma izquierda sobreestima y la derecha subestima, con error ≈ |f(b) − f(a)|·(b − a)/(2n), de orden 1/n. El punto medio tiene error de orden 1/n² porque f″ está acotada.',
+    cfg: () => ({ f: x => Math.exp(-x * x), a: 0, b: 2, h: 1, scale: 1, exact: GAUSS_REF, xmin: -2.5, xmax: 2.5, ymax: 1.08, pct: false })
   },
   notas: {
     tab: 'Aplicación: notas',
-    info: () => `<h2>¿Qué porcentaje del grupo saca más de ${P.c.toFixed(1)}?</h2>
-      <p>Si las notas (de 0 a 5) siguen una campana de Gauss con media μ y desviación σ, la probabilidad de sacar al menos la nota c es el <b>área bajo la curva de densidad</b> entre c y 5.0.</p>
-      <div class="formula">P(nota ≥ c) = ∫<sub>c</sub><sup>5</sup> <span style="white-space:nowrap">1/(σ√2π) · e<sup>−(x−μ)²/(2σ²)</sup></span> dx</div>
+    label: 'P',
+    info: () => `<h2>¿Qué porcentaje del grupo saca ${P.c.toFixed(1)} o más?</h2>
+      <p>Si las notas (de 0 a 5) siguen una campana de Gauss con media μ y desviación σ, la probabilidad de sacar al menos la nota c es un <b>área bajo la curva de densidad</b>. Como la variable es continua, «más de c» y «c o más» dan lo mismo.</p>
       <div class="sliders">
         <label>Media μ = <b id="muL">${P.mu.toFixed(1)}</b><input type="range" id="mu" min="2.5" max="4.5" step="0.1" value="${P.mu}"></label>
         <label>Desviación σ = <b id="sgL">${P.sigma.toFixed(2)}</b><input type="range" id="sg" min="0.2" max="1.2" step="0.05" value="${P.sigma}"></label>
         <label>Nota mínima c = <b id="cL">${P.c.toFixed(1)}</b><input type="range" id="cc" min="3.0" max="4.8" step="0.1" value="${P.c}"></label>
-      </div>`,
+      </div>
+      <div class="controls"><label class="inline">Modelo
+        <select id="model" class="btn">
+          <option value="trunc"${P.model === 'trunc' ? ' selected' : ''}>Normal truncada a [0, 5] (corregido)</option>
+          <option value="informe"${P.model === 'informe' ? ' selected' : ''}>Sin renormalizar (fórmula del informe)</option>
+        </select></label></div>
+      <div id="notasExtra"></div>`,
+    ref: 'Valor de referencia calculado con la regla de Simpson con 200 000 subintervalos (error menor que 10<sup>−12</sup>). Se usa Simpson, y no el punto medio, para no comparar las sumas de Riemann consigo mismas.',
+    riem: 'Las sumas usan la misma función que la simulación: la densidad truncada f(x)/Z o la densidad sin renormalizar, según el modelo elegido.',
     cfg: () => {
-      const h = P.c >= P.mu ? pdf(P.c) : pdf(P.mu);
-      return { f: pdf, a: P.c, b: 5, h, scale: 1, exact: midpointRef(pdf, P.c, 5, 400000), xmin: 0, xmax: 5, ymax: pdf(P.mu) * 1.12, pct: true };
+      const m = notasModel(), Z = P.model === 'trunc' ? m.Z : 1;
+      const g = x => pdf(x) / Z;
+      const h = P.c >= P.mu ? g(P.c) : g(P.mu);
+      return { f: g, a: P.c, b: 5, h, scale: 1, exact: P.model === 'trunc' ? m.trunc : m.raw, xmin: 0, xmax: 5, ymax: g(P.mu) * 1.12, pct: true, m };
     }
   }
 };
@@ -174,7 +303,10 @@ const fmtErr = e => {
   const s = v === 0 ? '0' : v < 0.001 ? v.toExponential(1) : v.toFixed(4);
   return s + (C.pct ? ' pp' : '');
 };
+const pp = v => (v * 100).toFixed(2) + ' %';
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+// Standard deviation of ONE dart: sigma(I_hat) * sqrt(N) = scale * |R| * sqrt(p (1 - p)), with p = I / (scale * |R|).
+function sigma1() { const R = C.scale * (C.b - C.a) * C.h, p = Math.min(1, Math.max(0, C.exact / R)); return R * Math.sqrt(p * (1 - p)); }
 
 function fit(cv) {
   const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
@@ -235,15 +367,24 @@ function addPoints(k) {
 }
 const estimate = () => N ? C.scale * (C.b - C.a) * C.h * hits / N : NaN;
 function updateStats() {
-  $('sN').textContent = N.toLocaleString('es-CO');
-  $('sH').textContent = hits.toLocaleString('es-CO');
+  $('sN').textContent = fmtInt(N);
+  $('sH').textContent = fmtInt(hits);
   $('sR').textContent = fmt(C.exact);
-  if (!N) { $('sE').textContent = '—'; $('sErr').textContent = '—'; $('step').innerHTML = 'Presiona <b>Animar</b> o lanza puntos para empezar.'; return; }
-  const e = estimate();
+  $('refNote').innerHTML = '<b>Valor de referencia:</b> ' + MODES[mode].ref;
+  if (!N) { $('sE').textContent = '—'; $('sErr').textContent = '—'; $('sCI').textContent = '—'; $('step').innerHTML = 'Presiona <b>Animar</b> o lanza puntos para empezar.'; return; }
+  const e = estimate(), err = Math.abs(e - C.exact);
   $('sE').textContent = fmt(e);
-  $('sErr').textContent = fmtErr(Math.abs(e - C.exact)) + ` (${(Math.abs(e - C.exact) / C.exact * 100).toFixed(2)} %)`;
-  const area = (C.b - C.a) * C.h;
-  $('step').innerHTML = `Área ≈ ${C.scale !== 1 ? C.scale + ' × ' : ''}(b − a)·h × aciertos/N = ${C.scale !== 1 ? C.scale + ' × ' : ''}${area.toFixed(4)} × ${hits}/${N} = <b>${fmt(e)}</b>`;
+  $('sErr').textContent = fmtErr(err) + (C.exact > 1e-9 ? ` (${(err / C.exact * 100).toFixed(2)} %)` : '');
+  if (N >= 30 && hits >= 5 && N - hits >= 5) {
+    const R = C.scale * (C.b - C.a) * C.h, ph = hits / N, half = 1.96 * R * Math.sqrt(ph * (1 - ph) / N);
+    const lo = e - half, hi = e + half, inside = lo <= C.exact && C.exact <= hi;
+    $('sCI').textContent = `[${fmt(lo)}, ${fmt(hi)}] ${inside ? '✓ contiene el valor de referencia' : '✗ no lo contiene (pasa ≈ 5 % de las veces)'}`;
+  } else $('sCI').textContent = '— (se necesitan N ≥ 30, con al menos 5 aciertos y 5 fallos)';
+  const w = (C.b - C.a).toFixed(4), hh = C.h.toFixed(4), frac = `${fmtInt(hits)}/${fmtInt(N)}`;
+  const raw = C.scale * (C.b - C.a) * C.h * hits / N;
+  $('step').innerHTML = mode === 'pi'
+    ? `π ≈ 4 × (b − a) × h × aciertos/N = 4 × ${w} × ${hh} × ${frac} = <b>${fmt(e)}</b>`
+    : `${MODES[mode].label} ≈ (b − a) × h × aciertos/N = ${w} × ${hh} × ${frac} = ${C.pct ? raw.toFixed(4) + ' ≈ <b>' + fmt(e) + '</b>' : '<b>' + fmt(e) + '</b>'}`;
 }
 
 /* ---------- Panel 2: convergence ---------- */
@@ -251,19 +392,27 @@ function drawConv() {
   const { ctx, w, h } = fit($('conv'));
   const maxN = Math.max(100, N), lx = Math.log10(maxN);
   let dev = 0; for (const [n, e] of hist) if (n >= 20) dev = Math.max(dev, Math.abs(e - C.exact));
-  dev = Math.max(dev, Math.abs(C.exact) * 0.03) * 1.15;
+  dev = Math.max(dev, Math.abs(C.exact) * 0.03, 1e-6) * 1.15;
   const y0 = C.exact - dev, y1 = C.exact + dev;
   const F = frame(w, h, 0, lx, y0, y1);
-  const xt = []; for (let p = 0; p <= Math.floor(lx); p++) xt.push([p, (10 ** p).toLocaleString('es-CO')]);
+  const xt = []; for (let p = 0; p <= Math.floor(lx); p++) xt.push([p, fmtInt(10 ** p)]);
   const yt = [y0, C.exact, y1].map(v => [v, C.pct ? (v * 100).toFixed(1) + '%' : v.toFixed(3)]);
   axes(ctx, F, 0, lx, y0, y1, xt, yt);
+  ctx.save(); ctx.beginPath(); ctx.rect(F.L, F.T, w - F.L - F.R, h - F.T - F.B); ctx.clip();
+  // 95 % band: reference value ± 1.96 sigma / sqrt(N)
+  const s1 = sigma1(), steps = 200;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) { const l = lx * i / steps, X = F.X(l), Y = F.Y(C.exact + 1.96 * s1 / Math.sqrt(10 ** l)); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
+  for (let i = steps; i >= 0; i--) { const l = lx * i / steps; ctx.lineTo(F.X(l), F.Y(C.exact - 1.96 * s1 / Math.sqrt(10 ** l))); }
+  ctx.closePath(); ctx.fillStyle = css('--band'); ctx.fill();
   ctx.setLineDash([5, 4]); ctx.strokeStyle = css('--hit'); ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(F.L, F.Y(C.exact)); ctx.lineTo(w - F.R, F.Y(C.exact)); ctx.stroke(); ctx.setLineDash([]);
   if (hist.length) {
-    ctx.save(); ctx.beginPath(); ctx.rect(F.L, F.T, w - F.L - F.R, h - F.T - F.B); ctx.clip();
     ctx.beginPath(); hist.forEach(([n, e], i) => { const X = F.X(Math.log10(n)), Y = F.Y(e); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
-    ctx.strokeStyle = css('--accent'); ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
-  } else {
+    ctx.strokeStyle = css('--accent'); ctx.lineWidth = 2; ctx.stroke();
+  }
+  ctx.restore();
+  if (!hist.length) {
     ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.font = '13px system-ui';
     ctx.fillText('Lanza puntos para ver la curva de convergencia', w / 2, h / 2 - 20);
   }
@@ -290,37 +439,58 @@ function drawRiemann() {
   drawCurve(ctx, F, C.f, C.xmin, C.xmax);
   const r = riemann(n, m);
   $('rV').textContent = fmt(r); $('rE').textContent = fmtErr(Math.abs(r - C.exact));
+  $('riemNote').innerHTML = MODES[mode].riem;
 }
+// Observed order = slope in log-log scale between two consecutive rows (n multiplied by 10).
+const order = (prev, cur) => {
+  if (!(prev > 0 && cur > 0)) return '—';
+  const s = Math.log10(cur / prev);
+  return (s < 0 ? '−' : '+') + Math.abs(s).toFixed(2);
+};
 function race() {
   $('race').innerHTML = '<p class="muted">Calculando…</p>';
   setTimeout(() => {
-    const ns = [10, 100, 1000, 10000, 100000], runs = 5, w = C.b - C.a;
-    let rows = '';
+    const ns = [10, 100, 1000, 10000, 100000], runs = 20, w = C.b - C.a, s1 = sigma1();
+    let rows = '', pr = 0, pm = 0;
     for (const n of ns) {
       const er = Math.abs(riemann(n, 'M') - C.exact);
-      let em = 0;
-      for (let r = 0; r < runs; r++) { let k = 0; for (let i = 0; i < n; i++) { const x = C.a + w * Math.random(); if (C.h * Math.random() < C.f(x)) k++; } em += Math.abs(C.scale * w * C.h * k / n - C.exact); }
-      em /= runs;
-      rows += `<tr><td>${n.toLocaleString('es-CO')}</td><td class="${er <= em ? 'win' : ''}">${fmtErr(er)}</td><td class="${em < er ? 'win' : ''}">${fmtErr(em)}</td></tr>`;
+      let se = 0;
+      for (let r = 0; r < runs; r++) { let k = 0; for (let i = 0; i < n; i++) { const x = C.a + w * Math.random(); if (C.h * Math.random() < C.f(x)) k++; } se += (C.scale * w * C.h * k / n - C.exact) ** 2; }
+      const em = Math.sqrt(se / runs);
+      rows += `<tr><td>${fmtInt(n)}</td><td class="${er <= em ? 'win' : ''}">${fmtErr(er)}</td><td>${pr ? order(pr, er) : '—'}</td><td class="${em < er ? 'win' : ''}">${fmtErr(em)}</td><td>${fmtErr(s1 / Math.sqrt(n))}</td><td>${pm ? order(pm, em) : '—'}</td></tr>`;
+      pr = er; pm = em;
     }
-    $('race').innerHTML = `<table><tr><th>n (rectángulos o puntos)</th><th>Error Riemann (punto medio)</th><th>Error Monte Carlo (prom. ${runs} corridas)</th></tr>${rows}</table>
-      <p class="muted" style="font-size:.9rem;margin:8px 0 0">En una sola variable, Riemann gana con mucha ventaja. Monte Carlo mejora más despacio (10× más precisión ≈ 100× más puntos), pero su velocidad no empeora cuando la integral tiene muchas variables. Por eso se usa en gráficos 3D, finanzas e inteligencia artificial.</p>`;
+    $('race').innerHTML = `<div class="tw"><table><tr><th>n (rectángulos o puntos)</th><th>Error Riemann (punto medio)</th><th>Orden</th><th>Error Monte Carlo (RMSE, ${runs} corridas)</th><th>Teoría σ/√n</th><th>Orden</th></tr>${rows}</table></div>
+      <p class="muted small" style="margin:8px 0 0"><b>Orden</b> es la pendiente en escala log–log: cuántas potencias de 10 baja el error cuando n se multiplica por 10. Lo esperado es −2 para el punto medio (−1.5 en el escenario de π, porque f″ no está acotada) y −0.5 para Monte Carlo. El RMSE (raíz del error cuadrático medio) de Monte Carlo debe parecerse a la columna «Teoría».</p>
+      <p class="muted small" style="margin:8px 0 0">En una sola variable, Riemann gana con mucha ventaja. Monte Carlo mejora más despacio (10× más precisión ≈ 100× más puntos), pero su orden N<sup>−1/2</sup> no depende del número de variables d, mientras que el de una malla de punto medio es N<sup>−2/d</sup>: a partir de d &gt; 4 Monte Carlo gana. Por eso se usa en gráficos 3D, finanzas e inteligencia artificial.</p>`;
   }, 30);
 }
 
 /* ---------- wiring ---------- */
 function reset() { N = 0; hits = 0; ptsStore = []; hist = []; nextRec = 1; drawBase(); updateStats(); drawConv(); $('race').innerHTML = ''; }
+function updNotas() {
+  const m = C.m, other = P.model === 'trunc' ? m.raw : m.trunc;
+  const tail = `La normal asigna ${pp(m.above)} de probabilidad a notas mayores que 5 y ${pp(m.below)} a notas menores que 0, que no existen.`;
+  $('notasExtra').innerHTML = P.model === 'trunc'
+    ? `<div class="formula">P(nota ≥ c) = ∫<sub>c</sub><sup>5</sup> f(x) dx / ∫<sub>0</sub><sup>5</sup> f(x) dx</div>
+       <p class="muted small">f es la densidad normal 1/(σ√2π)·e<sup>−(x−μ)²/(2σ²)</sup>. ${tail} Al dividir entre Z = ∫<sub>0</sub><sup>5</sup> f(x) dx = ${Z4(m.Z)}, el área total en [0, 5] vuelve a ser 1, como exige una densidad. La curva dibujada es f(x)/Z. Con la fórmula del informe el resultado sería ${pp(other)}.</p>`
+    : `<div class="formula">P(c ≤ X ≤ 5) = ∫<sub>c</sub><sup>5</sup> <span style="white-space:nowrap">1/(σ√2π) · e<sup>−(x−μ)²/(2σ²)</sup></span> dx</div>
+       <div class="note">Esta es la fórmula del informe. No es P(nota ≥ c), porque ${tail.charAt(0).toLowerCase() + tail.slice(1)} Con el modelo corregido (normal truncada) el resultado es ${pp(other)}, una diferencia de ${(Math.abs(other - C.exact) * 100).toFixed(2)} puntos porcentuales.</div>`;
+}
+const Z4 = v => v.toFixed(4);
 function setMode(m) {
   mode = m; C = MODES[m].cfg();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   $('info').innerHTML = MODES[m].info();
   if (m === 'notas') {
-    const bind = (id, key, lbl, d) => $(id).addEventListener('input', e => {
-      P[key] = +e.target.value; $(lbl).textContent = P[key].toFixed(d);
-      C = MODES.notas.cfg(); $('info').querySelector('h2').textContent = `¿Qué porcentaje del grupo saca más de ${P.c.toFixed(1)}?`;
-      reset(); drawRiemann();
-    });
+    const refresh = () => {
+      C = MODES.notas.cfg(); $('info').querySelector('h2').textContent = `¿Qué porcentaje del grupo saca ${P.c.toFixed(1)} o más?`;
+      updNotas(); reset(); drawRiemann();
+    };
+    const bind = (id, key, lbl, d) => $(id).addEventListener('input', e => { P[key] = +e.target.value; $(lbl).textContent = P[key].toFixed(d); refresh(); });
     bind('mu', 'mu', 'muL', 1); bind('sg', 'sigma', 'sgL', 2); bind('cc', 'c', 'cL', 1);
+    $('model').addEventListener('change', e => { P.model = e.target.value; refresh(); });
+    updNotas();
   }
   reset(); drawRiemann();
 }
