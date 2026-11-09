@@ -72,6 +72,12 @@ details > *:not(summary){margin-top:8px}
 .card.collapsed .tog{transform:rotate(-90deg)}
 /* Glossaries */
 details.gloss{margin-top:12px;border-bottom:none}
+/* Per-scenario objective and methodology */
+.plan{background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin:0 0 12px}
+.plan .ptitle{font-weight:600;margin:0 0 6px}
+.plan p{margin:6px 0}
+.plan ol{margin:4px 0 6px}
+.plan li{margin-bottom:3px}
 dl.gl{display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:8px 16px;margin:8px 0 0}
 dl.gl dt{font-weight:600}
 dl.gl dd{margin:0;color:var(--muted)}
@@ -84,10 +90,8 @@ dl.gl dd{margin:0;color:var(--muted)}
   <p class="sub">Cálculo II · ¿Cómo calcula una computadora una integral que no se puede resolver a mano?</p>
 
   <section class="card intro">
-    <h2>Objetivo y metodología</h2>
-    <p>Esta aplicación calcula integrales definidas lanzando puntos al azar (método Monte Carlo) y compara el resultado con las sumas de Riemann.</p>
-    <p>El método se estudia en cuatro escenarios, de lo conocido a lo nuevo: primero se estima \(\pi\) y se valida el método con una integral que se resuelve a mano, \(\int_0^{\pi} \operatorname{sen} x\,dx\); luego se aplica a una integral sin antiderivada elemental, \(\int_0^2 e^{-x^2}\,dx\), y, por último, a un problema real: el porcentaje de un grupo que alcanza una nota mínima.</p>
-    <p>En cada escenario se siguen tres pasos: <b>1</b> lanzar puntos y estimar la integral, <b>2</b> observar cómo converge la estimación y <b>3</b> compararla con las sumas de Riemann. Al final se explica el fundamento matemático del método.</p>
+    <h2>Introducción</h2>
+    <p>Esta aplicación calcula integrales definidas lanzando puntos al azar (método Monte Carlo) y compara el resultado con las sumas de Riemann. Tiene cuatro escenarios, de lo conocido a lo nuevo: \(\pi\), una integral que se resuelve a mano, una integral sin antiderivada elemental y una aplicación a las notas de un grupo. Cada escenario tiene su propio objetivo y metodología, y se estudia en tres paneles: lanzamiento de puntos, convergencia y comparación con Riemann. Al final están el fundamento matemático y el glosario general.</p>
   </section>
 
   <div class="tabs" id="tabs"></div>
@@ -261,6 +265,15 @@ const MODES = {
       <p class="muted small">Un detalle importante: la pendiente de esta curva es vertical en \(x=1\), porque \(f'(x)=-x/\sqrt{1-x^2}\to-\infty\). Por eso aquí el error del punto medio no baja como \(1/n^2\) sino como \(n^{-3/2}\) (míralo en la carrera de métodos).</p>`,
     ref: tex`\(\pi\) es una constante conocida; se usa el valor de <code>Math.PI</code> con 16 cifras.`,
     riem: tex`\(f(x)=\sqrt{1-x^2}\) es decreciente: la suma izquierda sobreestima y la derecha subestima. El punto medio mejora como \(n^{-3/2}\) y no como \(1/n^2\): la cota \(|E_M|\le K(b-a)^3/(24n^2)\) exige \(|f''|\le K\), y aquí \(f''\) no está acotada cerca de \(x=1\).`,
+    plan: {
+      obj: tex`Estimar \(\pi\) como un área y comprobar que la estimación mejora como \(1/\sqrt{N}\).`,
+      steps: [
+        tex`Función \(f(x)=\sqrt{1-x^2}\) en \([0,1]\), con \(h=1\) (el máximo de \(f\), en \(x=0\)): el rectángulo es el cuadrado \(1\times 1\).`,
+        tex`Se lanzan puntos y se calcula \(\pi\approx 4\cdot K/N\), porque el área bajo la curva es \(\pi/4\).`,
+        tex`Se compara con el valor conocido de \(\pi\) (paneles 1 y 2) y con las sumas de Riemann (panel 3).`
+      ],
+      expect: tex`Con unos 100 000 puntos, la estimación queda cerca de 3.14. En la carrera, el punto medio tiene orden \(-1.5\) (y no \(-2\)) por la pendiente vertical en \(x=1\), y Monte Carlo tiene orden \(-0.5\).`
+    },
     gloss: [
       [tex`Cuarto de círculo`, tex`Región \(x^2+y^2\le 1\) con \(x\ge 0,\ y\ge 0\). Su área es \(\pi/4\), porque el círculo completo de radio 1 tiene área \(\pi\cdot 1^2=\pi\).`],
       [tex`Integral definida`, tex`\(\int_a^b f(x)\,dx\): área (con signo) entre la gráfica de \(f\) y el eje \(x\), desde \(a\) hasta \(b\). Se define como el límite de las sumas de Riemann cuando \(n\to\infty\).`],
@@ -280,6 +293,16 @@ const MODES = {
       <div class="formula">\[\int_0^{\pi} \operatorname{sen} x\,dx = \Big[-\cos x\Big]_0^{\pi} = 1-(-1) = 2\]</div>`,
     ref: 'El valor 2 se calcula a mano con el teorema fundamental del cálculo.',
     riem: tex`Aquí la suma izquierda \(S_I\) y la derecha \(S_D\) dan exactamente lo mismo, y no es un error: \(S_D-S_I=\Delta x\,\big(f(b)-f(a)\big)=\Delta x\,(\operatorname{sen}\pi-\operatorname{sen}0)=0\). Cuando \(f(a)=f(b)\), las dos coinciden con la regla del trapecio; por eso su error baja como \(1/n^2\) y no como \(1/n\).`,
+    plan: {
+      obj: tex`Validar el método con una integral cuyo valor exacto se conoce, antes de usarlo en casos donde no hay respuesta exacta.`,
+      steps: [
+        tex`Función \(f(x)=\operatorname{sen}x\) en \([0,\pi]\), con \(h=1\) (el máximo de \(f\), en \(x=\pi/2\)): el rectángulo tiene área \(\pi\).`,
+        tex`Se calcula el valor exacto a mano con el teorema fundamental del cálculo: \(\int_0^{\pi}\operatorname{sen}x\,dx=2\).`,
+        tex`Se lanzan puntos, se estima \(\hat I=\pi\cdot K/N\) y se mide el error frente al valor exacto.`,
+        tex`Se compara con las sumas de Riemann izquierda, derecha y de punto medio.`
+      ],
+      expect: tex`La estimación se acerca a 2 y el intervalo de confianza contiene al 2 cerca del 95 % de las veces. Las sumas izquierda y derecha coinciden, y el punto medio tiene orden \(-2\).`
+    },
     gloss: [
       [tex`Antiderivada (primitiva)`, tex`Función \(F\) tal que \(F'=f\). Para \(f(x)=\operatorname{sen}x\), una antiderivada es \(F(x)=-\cos x\).`],
       [tex`Teorema fundamental del cálculo`, tex`Si \(f\) es continua en \([a,b]\) y \(F'=f\), entonces \(\int_a^b f(x)\,dx=F(b)-F(a)\). Esta forma de calcular la integral se llama <b>regla de Barrow</b>.`],
@@ -307,6 +330,15 @@ const MODES = {
     },
     ref: tex`Valor de referencia calculado con la serie de Maclaurin de \(e^{-x^2}\) integrada término a término (40 términos). Coincide con \((\sqrt{\pi}/2)\,\operatorname{erf}(2)=0.8820813907624\ldots\)`,
     riem: tex`\(f\) es decreciente en \([0,2]\): la suma izquierda sobreestima y la derecha subestima, con error \(\approx|f(b)-f(a)|\,(b-a)/(2n)\), de orden \(1/n\). El punto medio tiene error de orden \(1/n^2\) porque \(f''\) está acotada.`,
+    plan: {
+      obj: tex`Aproximar una integral que no se puede calcular con la regla de Barrow, porque \(e^{-x^2}\) no tiene antiderivada elemental.`,
+      steps: [
+        tex`Función \(f(x)=e^{-x^2}\) en \([0,2]\), con \(h=1\) (el máximo de \(f\), en \(x=0\)): el rectángulo tiene área 2.`,
+        tex`El valor de referencia se obtiene con la serie de Maclaurin de \(e^{-x^2}\), integrada término a término.`,
+        tex`Se lanzan puntos, se estima \(\hat I=2\cdot K/N\) y se compara con la serie y con las sumas de Riemann.`
+      ],
+      expect: tex`Las tres aproximaciones (serie, Riemann y Monte Carlo) coinciden en \(0.88208\ldots\) La serie y Riemann llegan con muchos menos cálculos; Monte Carlo converge más despacio, como \(1/\sqrt{N}\).`
+    },
     gloss: [
       [tex`Campana de Gauss`, tex`Gráfica de \(e^{-x^2}\) (y, con otra escala, de la densidad normal): simétrica respecto a \(x=0\), con máximo en \(x=0\) y decreciente hacia los lados.`],
       [tex`Función elemental`, tex`Función que se construye con polinomios, exponenciales, logaritmos, funciones trigonométricas y sus inversas, usando operaciones aritméticas y composición.`],
@@ -331,6 +363,16 @@ const MODES = {
       <div id="notasExtra"></div>`,
     ref: tex`Valor de referencia calculado con la regla de Simpson con 200 000 subintervalos (error menor que \(10^{-12}\)). Se usa Simpson, y no el punto medio, para no comparar las sumas de Riemann consigo mismas.`,
     riem: tex`Las sumas usan la misma función que la simulación: la densidad truncada \(f(x)/Z\).`,
+    plan: {
+      obj: tex`Aplicar el método a un problema real: estimar qué porcentaje de un grupo alcanza una nota mínima \(c\).`,
+      steps: [
+        tex`Las notas se modelan con una distribución normal de media \(\mu\) y desviación \(\sigma\), truncada a \([0,5]\) porque no hay notas fuera de ese rango.`,
+        tex`La probabilidad buscada es un área: \(P(\text{nota}\ge c)=\int_c^5 f(x)\,dx \,/\, Z\), donde \(Z\) es el área de la normal en \([0,5]\).`,
+        tex`El rectángulo es \([c,5]\times[0,h]\), con \(h\) igual al máximo de la densidad en ese intervalo: en \(x=c\) si \(c\ge\mu\), y en \(x=\mu\) si no.`,
+        tex`Se lanzan puntos y el resultado se expresa en porcentaje. Los controles permiten cambiar \(\mu\), \(\sigma\) y \(c\).`
+      ],
+      expect: tex`Con \(\mu=3.5\), \(\sigma=0.6\) y \(c=4.0\), cerca del 19.7 % del grupo saca 4.0 o más. Al mover los controles, el rectángulo y el valor de referencia se recalculan solos.`
+    },
     gloss: [
       [tex`Variable aleatoria continua`, tex`Variable que puede tomar cualquier valor de un intervalo, como una nota entre 0 y 5. La probabilidad de un valor exacto es 0; solo los intervalos tienen probabilidad positiva.`],
       [tex`Función de densidad`, tex`Función \(f\ge 0\) con área total 1 tal que \(P(a\le X\le b)=\int_a^b f(x)\,dx\): las probabilidades son áreas bajo la curva.`],
@@ -524,6 +566,10 @@ function race() {
 }
 
 /* ---------- glossary ---------- */
+const planHTML = p => `<div class="plan"><p class="ptitle">🎯 Objetivo y metodología</p>
+  <p><b>Objetivo:</b> ${p.obj}</p>
+  <p><b>Metodología:</b></p><ol>${p.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+  <p><b>Qué se espera ver:</b> ${p.expect}</p></div>`;
 const glossHTML = list => list.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('');
 const GLOSS_GENERAL = [
   [tex`Método Monte Carlo`, tex`Uso de números aleatorios para aproximar una cantidad que no es aleatoria, como una integral.`],
@@ -574,7 +620,9 @@ const Z4 = v => v.toFixed(4);
 function setMode(m) {
   mode = m; C = MODES[m].cfg();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
-  $('info').innerHTML = MODES[m].info()
+  // The objective/methodology block goes right after the scenario title (the first </h2>).
+  const info = MODES[m].info(), cut = info.indexOf('</h2>') + 5;
+  $('info').innerHTML = info.slice(0, cut) + planHTML(MODES[m].plan) + info.slice(cut)
     + `<details class="gloss"><summary>📖 Glosario de este escenario</summary><dl class="gl">${glossHTML(MODES[m].gloss)}</dl>`
     + `<p class="muted small">Los términos comunes a todos los escenarios (N, varianza, intervalo de confianza…) están en el glosario general, al final de la página.</p></details>`;
   addToggle($('info'));
