@@ -15,6 +15,9 @@ h2{font-size:1.05rem;margin:0 0 10px}
 h3{font-size:.98rem;margin:14px 0 6px}
 a{color:var(--accent)}
 .sub{color:var(--muted);margin:0 0 16px}
+.lead{color:var(--muted);margin:0 0 12px}
+.intro p{margin:0 0 8px}
+.intro p:last-child{margin-bottom:0}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer}
 .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -65,12 +68,20 @@ details > *:not(summary){margin-top:8px}
   <h1>Monte Carlo: integrales con dardos 🎯</h1>
   <p class="sub">Cálculo II · ¿Cómo calcula una computadora una integral que no se puede resolver a mano?</p>
 
+  <section class="card intro">
+    <h2>Objetivo y metodología</h2>
+    <p>Esta aplicación calcula integrales definidas lanzando puntos al azar (método Monte Carlo) y compara el resultado con las sumas de Riemann.</p>
+    <p>El método se estudia en cuatro escenarios, de lo conocido a lo nuevo: primero se estima π y se valida el método con una integral que se resuelve a mano (∫ sen x); luego se aplica a una integral sin antiderivada elemental (e<sup>−x²</sup>) y, por último, a un problema real: el porcentaje de un grupo que alcanza una nota mínima.</p>
+    <p>En cada escenario se siguen tres pasos: <b>1</b> lanzar puntos y estimar la integral, <b>2</b> observar cómo converge la estimación y <b>3</b> compararla con las sumas de Riemann. Al final se explica el fundamento matemático del método.</p>
+  </section>
+
   <div class="tabs" id="tabs"></div>
 
   <section class="card" id="info"></section>
 
   <section class="card">
     <h2>1 · Lanzamiento de puntos</h2>
+    <p class="lead">Se lanzan N puntos al azar, con distribución uniforme, dentro del rectángulo [a, b] × [0, h], donde h es el valor máximo de f en el intervalo. Se cuentan los que caen debajo de la curva (aciertos): la fracción de aciertos multiplicada por el área del rectángulo estima la integral. Junto a la estimación se muestran el error frente al valor de referencia y un intervalo de confianza del 95 %, que indica la precisión sin necesidad de conocer el valor exacto.</p>
     <div class="plot"><canvas id="base"></canvas><canvas id="pts"></canvas></div>
     <div class="legend">
       <span><span class="dot" style="background:var(--hit)"></span>Debajo de la curva (acierto)</span>
@@ -99,12 +110,14 @@ details > *:not(summary){margin-top:8px}
 
   <section class="card">
     <h2>2 · Convergencia: la estimación se acerca al valor de referencia</h2>
+    <p class="lead">Mientras se lanzan puntos, la estimación se registra cada vez que N crece cerca de un 3 % y se grafica contra N. Si el método funciona, la curva se acerca al valor de referencia y se mantiene dentro de una banda que se estrecha como 1/√N: esa es la velocidad de convergencia de Monte Carlo.</p>
     <canvas id="conv"></canvas>
     <p class="muted small" style="margin:8px 0 0">Eje horizontal en escala logarítmica (1, 10, 100, 1 000…). La línea punteada es el valor de referencia. La <b>banda verde</b> es valor ± 1.96·σ/√N: la curva azul debería quedar dentro de ella cerca del 95 % del tiempo, y la banda se cierra como 1/√N.</p>
   </section>
 
   <section class="card">
     <h2>3 · Comparación con sumas de Riemann</h2>
+    <p class="lead">La misma integral se aproxima con n rectángulos, tomando la altura en el extremo izquierdo, el derecho o el punto medio de cada subintervalo. La <b>carrera de métodos</b> compara los dos métodos con el mismo número de evaluaciones de f (n rectángulos frente a n puntos) y mide cuánto baja el error cuando n se multiplica por 10. Como Monte Carlo es aleatorio, su error se promedia en 20 corridas.</p>
     <canvas id="riem"></canvas>
     <div class="controls">
       <label class="inline">Rectángulos n = <b id="nLbl">8</b> <input type="range" id="nR" min="1" max="100" value="8"></label>
@@ -123,6 +136,7 @@ details > *:not(summary){margin-top:8px}
 
   <section class="card">
     <h2>¿Cómo funciona?</h2>
+    <p class="lead">Resumen del algoritmo que usa la aplicación en todos los escenarios.</p>
     <ol>
       <li>Se encierra la región bajo la curva en un rectángulo de área conocida: base (b − a) y altura h.</li>
       <li>Se generan N puntos aleatorios (x, y) dentro del rectángulo.</li>
@@ -136,6 +150,7 @@ details > *:not(summary){margin-top:8px}
 
   <section class="card">
     <h2>Fundamento matemático: por qué contar dardos calcula una integral</h2>
+    <p class="lead">Esta sección justifica el método: por qué la fracción de aciertos converge a la integral, de qué tamaño es el error y cuándo conviene usar Monte Carlo en lugar de las sumas de Riemann.</p>
     <p class="muted small" style="margin-top:0">Notación: R = [a, b] × [0, h] es el rectángulo, |R| = (b − a)·h su área, I = ∫<sub>a</sub><sup>b</sup> f(x) dx la integral buscada y K el número de aciertos en N lanzamientos.</p>
     <details open>
       <summary>Demostración paso a paso</summary>
@@ -182,23 +197,8 @@ details > *:not(summary){margin-top:8px}
     </details>
     <details>
       <summary>Números pseudoaleatorios</summary>
-      <p>La aplicación usa el generador del navegador (<code>Math.random</code>), sin semilla: los resultados cambian en cada ejecución. El informe usó NumPy con semilla 2026, así que las cifras de la aplicación no coinciden dígito por dígito con las tablas del informe. Es lo esperado: lo que debe coincidir es el comportamiento (el error baja como 1/√N y queda dentro del intervalo de confianza).</p>
+      <p>La aplicación usa el generador del navegador (<code>Math.random</code>), sin semilla: los resultados cambian en cada ejecución y no se repiten dígito por dígito. Lo que se mantiene es el comportamiento: el error baja como 1/√N y la estimación queda dentro del intervalo de confianza cerca del 95 % de las veces.</p>
     </details>
-  </section>
-
-  <section class="card">
-    <h2>Aclaraciones y correcciones al informe</h2>
-    <p class="muted small" style="margin-top:0">Después de entregar el informe revisamos el trabajo con más cuidado. Estas son las precisiones; la aplicación ya las incorpora.</p>
-    <ol>
-      <li><b>Notas.</b> El 19.6 % del informe es P(4 ≤ X ≤ 5) = ∫<sub>4</sub><sup>5</sup> f(x) dx, no P(X ≥ 4). Con la normal sin truncar, P(X ≥ 4) = 20.23 %; con la normal truncada a [0, 5], que es el modelo coherente con notas de 0 a 5, P(X ≥ 4) = 19.73 %. Con los valores del informe la diferencia es pequeña, pero crece al mover los controles: con μ = 4.5, σ = 1.2 y c = 3.0, la fórmula del informe da 55.59 % y el modelo truncado da 84.04 %. La pestaña «Aplicación: notas» usa ahora el modelo truncado y permite comparar con la fórmula del informe.</li>
-      <li><b>«La única opción es aproximar con métodos numéricos».</b> No es la única: la integral ∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx también se calcula con series de potencias, que son tema de Cálculo II. La pestaña «Campana de Gauss» muestra la serie.</li>
-      <li><b>«Como el exponente tiene un término al cuadrado, no tiene antiderivada elemental».</b> Ese razonamiento no es válido: x·e<sup>−x²</sup> también tiene un cuadrado en el exponente y su antiderivada es −½·e<sup>−x²</sup>. Que e<sup>−x²</sup> no tenga antiderivada elemental es un teorema (Liouville, siglo XIX), que se cita pero no se demuestra en Cálculo II.</li>
-      <li><b>El error del punto medio baja como 1/n².</b> Solo si f″ está acotada en [a, b]: la cota |E<sub>M</sub>| ≤ K(b − a)³/(24n²) exige |f″| ≤ K. En el escenario de π no lo está, porque la pendiente es vertical en x = 1, y el error baja como n<sup>−3/2</sup>. La carrera de métodos muestra el orden observado en cada escenario.</li>
-      <li><b>Repeticiones en la comparación con Riemann.</b> La aplicación promedia ahora 20 corridas, igual que el informe (la primera versión usaba 5), y reporta la raíz del error cuadrático medio (RMSE), que en teoría es σ/√n.</li>
-      <li><b>«Monte Carlo necesitó cerca de 10 000 puntos» para superar a M<sub>4</sub> en ∫ sen x.</b> Esa cifra sale de una sola corrida. En promedio basta con N ≈ (1.511 / 0.0523)² ≈ 835 puntos: del orden de mil puntos, frente a solo 4 rectángulos.</li>
-      <li><b>El error de Riemann de 1.2 × 10<sup>−12</sup> con n = 100 000</b> corresponde a ∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx.</li>
-      <li><b>«Valor exacto» en el informe</b> equivale a «valor de referencia» en la aplicación. Debajo del panel 1 se explica de dónde sale en cada escenario.</li>
-    </ol>
   </section>
 
   <p class="muted foot">Versión 2 · <a href="v1/">Ver la versión 1 (original)</a></p>
@@ -207,7 +207,7 @@ details > *:not(summary){margin-top:8px}
 <script>
 const $ = id => document.getElementById(id);
 const SQ2PI = Math.sqrt(2 * Math.PI);
-const P = { mu: 3.5, sigma: 0.6, c: 4.0, model: 'trunc' };
+const P = { mu: 3.5, sigma: 0.6, c: 4.0 };
 const pdf = x => Math.exp(-((x - P.mu) ** 2) / (2 * P.sigma ** 2)) / (P.sigma * SQ2PI);
 // Composite Simpson rule (n even). Used for reference values: a different method from the midpoint sums it is compared against.
 function simpson(f, a, b, n) { if (b <= a) return 0; const d = (b - a) / n; let s = f(a) + f(b); for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f(a + i * d); return s * d / 3; }
@@ -276,19 +276,14 @@ const MODES = {
         <label>Desviación σ = <b id="sgL">${P.sigma.toFixed(2)}</b><input type="range" id="sg" min="0.2" max="1.2" step="0.05" value="${P.sigma}"></label>
         <label>Nota mínima c = <b id="cL">${P.c.toFixed(1)}</b><input type="range" id="cc" min="3.0" max="4.8" step="0.1" value="${P.c}"></label>
       </div>
-      <div class="controls"><label class="inline">Modelo
-        <select id="model" class="btn">
-          <option value="trunc"${P.model === 'trunc' ? ' selected' : ''}>Normal truncada a [0, 5] (corregido)</option>
-          <option value="informe"${P.model === 'informe' ? ' selected' : ''}>Sin renormalizar (fórmula del informe)</option>
-        </select></label></div>
       <div id="notasExtra"></div>`,
     ref: 'Valor de referencia calculado con la regla de Simpson con 200 000 subintervalos (error menor que 10<sup>−12</sup>). Se usa Simpson, y no el punto medio, para no comparar las sumas de Riemann consigo mismas.',
-    riem: 'Las sumas usan la misma función que la simulación: la densidad truncada f(x)/Z o la densidad sin renormalizar, según el modelo elegido.',
+    riem: 'Las sumas usan la misma función que la simulación: la densidad truncada f(x)/Z.',
     cfg: () => {
-      const m = notasModel(), Z = P.model === 'trunc' ? m.Z : 1;
-      const g = x => pdf(x) / Z;
+      const m = notasModel();
+      const g = x => pdf(x) / m.Z;
       const h = P.c >= P.mu ? g(P.c) : g(P.mu);
-      return { f: g, a: P.c, b: 5, h, scale: 1, exact: P.model === 'trunc' ? m.trunc : m.raw, xmin: 0, xmax: 5, ymax: g(P.mu) * 1.12, pct: true, m };
+      return { f: g, a: P.c, b: 5, h, scale: 1, exact: m.trunc, xmin: 0, xmax: 5, ymax: g(P.mu) * 1.12, pct: true, m };
     }
   }
 };
@@ -469,13 +464,9 @@ function race() {
 /* ---------- wiring ---------- */
 function reset() { N = 0; hits = 0; ptsStore = []; hist = []; nextRec = 1; drawBase(); updateStats(); drawConv(); $('race').innerHTML = ''; }
 function updNotas() {
-  const m = C.m, other = P.model === 'trunc' ? m.raw : m.trunc;
-  const tail = `La normal asigna ${pp(m.above)} de probabilidad a notas mayores que 5 y ${pp(m.below)} a notas menores que 0, que no existen.`;
-  $('notasExtra').innerHTML = P.model === 'trunc'
-    ? `<div class="formula">P(nota ≥ c) = ∫<sub>c</sub><sup>5</sup> f(x) dx / ∫<sub>0</sub><sup>5</sup> f(x) dx</div>
-       <p class="muted small">f es la densidad normal 1/(σ√2π)·e<sup>−(x−μ)²/(2σ²)</sup>. ${tail} Al dividir entre Z = ∫<sub>0</sub><sup>5</sup> f(x) dx = ${Z4(m.Z)}, el área total en [0, 5] vuelve a ser 1, como exige una densidad. La curva dibujada es f(x)/Z. Con la fórmula del informe el resultado sería ${pp(other)}.</p>`
-    : `<div class="formula">P(c ≤ X ≤ 5) = ∫<sub>c</sub><sup>5</sup> <span style="white-space:nowrap">1/(σ√2π) · e<sup>−(x−μ)²/(2σ²)</sup></span> dx</div>
-       <div class="note">Esta es la fórmula del informe. No es P(nota ≥ c), porque ${tail.charAt(0).toLowerCase() + tail.slice(1)} Con el modelo corregido (normal truncada) el resultado es ${pp(other)}, una diferencia de ${(Math.abs(other - C.exact) * 100).toFixed(2)} puntos porcentuales.</div>`;
+  const m = C.m;
+  $('notasExtra').innerHTML = `<div class="formula">P(nota ≥ c) = ∫<sub>c</sub><sup>5</sup> f(x) dx / ∫<sub>0</sub><sup>5</sup> f(x) dx</div>
+    <p class="muted small">f es la densidad normal 1/(σ√2π)·e<sup>−(x−μ)²/(2σ²)</sup>. Como las notas solo van de 0 a 5, la normal se <b>trunca</b> a ese intervalo: con estos controles asigna ${pp(m.above)} de probabilidad a notas mayores que 5 y ${pp(m.below)} a notas menores que 0, que no existen. Al dividir entre Z = ∫<sub>0</sub><sup>5</sup> f(x) dx = ${Z4(m.Z)}, el área total en [0, 5] es 1, como exige una densidad. La curva dibujada es f(x)/Z, y la integral del numerador es la que se estima con Monte Carlo.</p>`;
 }
 const Z4 = v => v.toFixed(4);
 function setMode(m) {
@@ -489,7 +480,6 @@ function setMode(m) {
     };
     const bind = (id, key, lbl, d) => $(id).addEventListener('input', e => { P[key] = +e.target.value; $(lbl).textContent = P[key].toFixed(d); refresh(); });
     bind('mu', 'mu', 'muL', 1); bind('sg', 'sigma', 'sgL', 2); bind('cc', 'c', 'cL', 1);
-    $('model').addEventListener('change', e => { P.model = e.target.value; refresh(); });
     updNotas();
   }
   reset(); drawRiemann();
