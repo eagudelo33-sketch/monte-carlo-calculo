@@ -9,3 +9,5 @@ Simulación web interactiva que muestra cómo se aproxima una integral definida 
 ## Sitio publicado
 
 https://monte-carlo-calculo.vercel.app
+
+Cada `git push` a `main` vuelve a desplegar el sitio automáticamente.
