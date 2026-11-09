@@ -9,8 +9,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dde1e8;--accent:#2a6fdb;--accent-soft:rgba(42,111,219,.10);--hit:#16955a;--miss:#d64545;--rect:#8a93a6;--chip:#eef2f8;--band:rgba(22,149,90,.13)}
-@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--muted:#9aa3b5;--line:#2e3542;--accent:#6ea1ff;--accent-soft:rgba(110,161,255,.13);--hit:#3cc884;--miss:#ff6b6b;--rect:#7d8699;--chip:#252c38;--band:rgba(60,200,132,.15)}}
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dde1e8;--accent:#2a6fdb;--on-accent:#fff;--accent-soft:rgba(42,111,219,.10);--hit:#16955a;--miss:#d64545;--rect:#8a93a6;--chip:#eef2f8;--band:rgba(22,149,90,.13)}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--muted:#9aa3b5;--line:#2e3542;--accent:#6ea1ff;--on-accent:#0b1424;--accent-soft:rgba(110,161,255,.13);--hit:#3cc884;--miss:#ff6b6b;--rect:#7d8699;--chip:#252c38;--band:rgba(60,200,132,.15)}}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
 main{max-width:980px;margin:0 auto;padding:22px 16px 48px}
@@ -21,9 +22,11 @@ h3{font-size:.98rem;margin:14px 0 6px}
 .lead{color:var(--muted);margin:0 0 12px}
 .intro p{margin:0 0 8px}
 .intro p:last-child{margin-bottom:0}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer}
-.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+/* Scenario tabs stay pinned to the top while scrolling, so the scenario can be switched from any panel. */
+.tabs{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin:0 -16px 6px;padding:8px 16px 10px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer;white-space:nowrap}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
 /* Math: inline formulas keep the text size so lines stay evenly spaced; display formulas are centered blocks that scroll sideways on narrow screens. */
 .katex{font-size:1.05em}
@@ -37,13 +40,14 @@ h3{font-size:.98rem;margin:14px 0 6px}
 #conv,#riem{width:100%;height:220px;display:block}
 .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
 .btn{border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer;max-width:100%}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .btn:active{transform:translateY(1px)}
 label.inline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem;flex-wrap:wrap}
 input[type=range]{accent-color:var(--accent)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
-.stat{background:var(--chip);border-radius:10px;padding:8px 10px}
-.stat.wide{grid-column:span 2}
+/* Panel 1 has six stats: a 3 × 2 grid on wide screens and 2 × 3 on phones, with no empty cells. */
+.stats.six{grid-template-columns:repeat(3,minmax(0,1fr))}
+.stat{background:var(--chip);border-radius:10px;padding:8px 10px;min-width:0}
 .stat .k{font-size:.78rem;color:var(--muted)}
 .stat .v{font-size:1.15rem;font-variant-numeric:tabular-nums;font-weight:600}
 .stat .v.ci{font-size:1rem}
@@ -55,6 +59,7 @@ input[type=range]{accent-color:var(--accent)}
 .sliders label{display:block;font-size:.88rem;color:var(--muted)}
 .sliders input{width:100%}
 .tw{overflow-x:auto}
+.tw table.fit{width:auto;min-width:min(100%,420px)}
 table{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums;font-size:.92rem}
 th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 th{font-weight:600;font-size:.84rem;color:var(--muted);white-space:normal;vertical-align:bottom}
@@ -75,7 +80,8 @@ details > *:not(summary){margin-top:8px}
 .tog:hover{border-color:var(--accent);color:var(--accent)}
 .tog svg{width:20px;height:20px;transition:transform .15s}
 .card:not(.collapsed) .tog svg{transform:rotate(180deg)}
-.card.collapsed > :not(h2){display:none}
+/* !important: the canvases have id rules (#conv, #riem) with display:block that would otherwise win. */
+.card.collapsed > :not(h2){display:none !important}
 .card.collapsed > h2{margin:0}
 /* Scenario card: objective and key formula always visible, the rest in "Ver metodología y explicación". */
 .objective{margin:0 0 4px}
@@ -95,7 +101,7 @@ details.gloss{margin-top:12px;border-bottom:none}
 dl.gl{display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:8px 16px;margin:8px 0 0}
 dl.gl dt{font-weight:600}
 dl.gl dd{margin:0;color:var(--muted)}
-@media (max-width:600px){.plot{height:260px}#conv,#riem{height:200px}h1{font-size:1.3rem}.formula .katex{font-size:1.05em}dl.gl{grid-template-columns:1fr;gap:2px}dl.gl dd{margin-bottom:8px}.tog{width:44px;height:44px}.col-theory{display:none}th,td{padding:6px 5px}}
+@media (max-width:600px){.plot{height:260px}#conv,#riem{height:200px}h1{font-size:1.3rem}.formula .katex{font-size:1.05em}dl.gl{grid-template-columns:1fr;gap:2px}dl.gl dd{margin-bottom:8px}.tog{width:44px;height:44px}.col-theory{display:none}th,td{padding:6px 5px}.stats.six{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -136,13 +142,13 @@ dl.gl dd{margin:0;color:var(--muted)}
       <button class="btn" id="reset">↺ Reiniciar</button>
       <label class="inline">Velocidad <input type="range" id="speed" min="0" max="100" value="45"></label>
     </div>
-    <div class="stats">
+    <div class="stats six">
       <div class="stat"><div class="k">Puntos lanzados (N)</div><div class="v" id="sN">0</div></div>
       <div class="stat"><div class="k">Aciertos (K)</div><div class="v hit" id="sH">0</div></div>
       <div class="stat"><div class="k">Estimación</div><div class="v" id="sE">—</div></div>
       <div class="stat"><div class="k">Valor de referencia</div><div class="v" id="sR">—</div></div>
       <div class="stat"><div class="k">Error</div><div class="v" id="sErr">—</div></div>
-      <div class="stat wide"><div class="k">Intervalo de confianza del 95&nbsp;%</div><div class="v ci" id="sCI">—</div><div class="badge" id="sCIok"></div></div>
+      <div class="stat"><div class="k">Intervalo de confianza del 95&nbsp;%</div><div class="v ci" id="sCI">—</div><div class="badge" id="sCIok"></div></div>
     </div>
     <div class="step" id="step"></div>
     <p class="muted small" id="refNote" style="margin:8px 0 0"></p>
@@ -192,7 +198,7 @@ dl.gl dd{margin:0;color:var(--muted)}
     <h2>Fundamento matemático: por qué contar dardos calcula una integral</h2>
     <p class="lead">Esta sección justifica el método: por qué la fracción de aciertos converge a la integral, de qué tamaño es el error y cuándo conviene usar Monte Carlo en lugar de las sumas de Riemann.</p>
     <p class="muted small" style="margin-top:0">Notación: \(R=[a,b]\times[0,h]\) es el rectángulo, \(|R|=(b-a)\,h\) su área, \(I=\int_a^b f(x)\,dx\) la integral buscada y \(K\) el número de aciertos en \(N\) lanzamientos.</p>
-    <details open>
+    <details>
       <summary>Demostración paso a paso</summary>
       <ol>
         <li><b>Probabilidad uniforme = cociente de áreas.</b> Si el punto \((X, Y)\) se escoge con distribución uniforme en \(R\), la probabilidad de que caiga en una región \(D\subset R\) es \(\text{área}(D)/|R|\).</li>
@@ -346,7 +352,7 @@ const MODES = {
       <h3>Con series de potencias (Cálculo II)</h3>
       <p>Como \(e^u=\sum_{k\ge 0} u^k/k!\), se cambia \(u\) por \(-x^2\) y se integra término a término:</p>
       <div class="formula">\[\int_0^2 e^{-x^2}\,dx = \sum_{k=0}^{\infty} \frac{(-1)^k\,2^{2k+1}}{k!\,(2k+1)}\]</div>
-      <div class="tw"><table><tr><th>Términos sumados</th><th>Suma parcial</th><th>Error</th></tr>${rows}</table></div>
+      <div class="tw"><table class="fit"><tr><th>Términos sumados</th><th>Suma parcial</th><th>Error</th></tr>${rows}</table></div>
       <p class="muted small">Con 30 términos la serie alcanza la precisión de la computadora. Ese es el valor de referencia de esta pestaña.</p>`;
     },
     ref: tex`Calculado con la serie de Maclaurin de \(e^{-x^2}\) integrada término a término (40 términos). Coincide con \((\sqrt{\pi}/2)\,\operatorname{erf}(2)=0.8820813907624\ldots\)`,
@@ -461,6 +467,11 @@ function niceTicks(a, b, target = 4) {
   return out;
 }
 const yTitleOf = () => mode === 'notas' ? 'densidad' : 'f(x)';
+// x ticks: multiples of π/4 for the sine scenario, evenly spaced decimals elsewhere.
+const xTicks = () => mode === 'sen'
+  ? [[0, '0'], [Math.PI / 4, 'π/4'], [Math.PI / 2, 'π/2'], [3 * Math.PI / 4, '3π/4'], [Math.PI, 'π']]
+  : ticks(C.xmin, C.xmax, mode === 'notas' ? 5 : 4, 2);
+const yTicks = () => ticks(0, C.ymax / 1.08 * (mode === 'notas' ? 1.08 / 1.12 : 1), 2, 2);
 
 function drawCurve(ctx, F, f, x0, x1) {
   ctx.beginPath();
@@ -477,7 +488,7 @@ function drawBase() {
   ctx.beginPath(); ctx.moveTo(F.X(C.a), F.Y(0));
   for (let i = 0; i <= 300; i++) { const x = C.a + (C.b - C.a) * i / 300; ctx.lineTo(F.X(x), F.Y(C.f(x))); }
   ctx.lineTo(F.X(C.b), F.Y(0)); ctx.closePath(); ctx.fillStyle = css('--accent-soft'); ctx.fill();
-  axes(ctx, F, C.xmin, C.xmax, 0, C.ymax, ticks(C.xmin, C.xmax, mode === 'notas' ? 5 : 4, 2), ticks(0, C.ymax / 1.08 * (mode === 'notas' ? 1.08 / 1.12 : 1), 2, 2), mode === 'notas' ? 'nota (x)' : 'x', yTitleOf());
+  axes(ctx, F, C.xmin, C.xmax, 0, C.ymax, xTicks(), yTicks(), mode === 'notas' ? 'nota (x)' : 'x', yTitleOf());
   drawCurve(ctx, F, C.f, C.xmin, C.xmax);
   ctx.setLineDash([6, 4]); ctx.strokeStyle = css('--rect'); ctx.lineWidth = 1.5;
   ctx.strokeRect(F.X(C.a), F.Y(C.h), F.X(C.b) - F.X(C.a), F.Y(0) - F.Y(C.h)); ctx.setLineDash([]);
@@ -575,7 +586,7 @@ function drawRiemann() {
   const n = +$('nR').value, m = $('mR').value; $('nLbl').textContent = n;
   const { ctx, w, h } = fit($('riem'));
   const F = frame(w, h, C.xmin, C.xmax, 0, C.ymax);
-  axes(ctx, F, C.xmin, C.xmax, 0, C.ymax, ticks(C.xmin, C.xmax, mode === 'notas' ? 5 : 4, 2), [], mode === 'notas' ? 'nota (x)' : 'x', yTitleOf());
+  axes(ctx, F, C.xmin, C.xmax, 0, C.ymax, xTicks(), yTicks(), mode === 'notas' ? 'nota (x)' : 'x', yTitleOf());
   const dx = (C.b - C.a) / n, off = m === 'L' ? 0 : m === 'R' ? 1 : .5;
   for (let i = 0; i < n; i++) {
     const x0 = C.a + i * dx, y = C.f(x0 + off * dx);
@@ -610,7 +621,7 @@ function race() {
     }
     $('race').innerHTML = tex`<div class="tw"><table><tr><th>n</th><th>Error Riemann (punto medio)</th><th>Error Monte Carlo (RMSE, ${runs} corridas)</th><th class="col-theory">Monte Carlo según la teoría, σ/√n</th></tr>${rows}</table></div>
       <p class="muted small" style="margin:6px 0 0">\(n\) = número de rectángulos o de puntos. En verde, el método con menor error en cada fila.</p>
-      <p class="muted small" style="margin:8px 0 0"><b>Orden</b> es la pendiente en escala log–log: cuántas potencias de 10 baja el error cuando \(n\) se multiplica por 10. Lo esperado es \(-2\) para el punto medio (\(-1.5\) en el escenario de \(\pi\), porque \(f''\) no está acotada) y \(-0.5\) para Monte Carlo. El RMSE (raíz del error cuadrático medio) de Monte Carlo debe parecerse al valor teórico \(\sigma/\sqrt{n}\) (última columna, visible en pantallas anchas).</p>
+      <p class="muted small" style="margin:8px 0 0"><b>Orden</b> es la pendiente en escala log–log: cuántas potencias de 10 baja el error cuando \(n\) se multiplica por 10. Lo esperado es \(-2\) para el punto medio y \(-0.5\) para Monte Carlo. En el escenario de \(\pi\), el punto medio da \(-1.5\) porque \(f''\) no está acotada. El RMSE (raíz del error cuadrático medio) de Monte Carlo debe parecerse al valor teórico \(\sigma/\sqrt{n}\) (última columna, visible en pantallas anchas).</p>
       <p class="muted small" style="margin:8px 0 0">En una sola variable, Riemann gana con mucha ventaja. Monte Carlo mejora más despacio (10× más precisión ≈ 100× más puntos), pero su orden \(N^{-1/2}\) no depende del número de variables \(d\), mientras que el de una malla de punto medio es \(N^{-2/d}\): a partir de \(d&gt;4\) Monte Carlo gana. Por eso se usa en gráficos 3D, finanzas e inteligencia artificial.</p>`;
     math($('race'));
   }, 30);
