@@ -4,16 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monte Carlo: integrales con dardos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dde1e8;--accent:#2a6fdb;--accent-soft:rgba(42,111,219,.10);--hit:#16955a;--miss:#d64545;--rect:#8a93a6;--chip:#eef2f8;--band:rgba(22,149,90,.13);--warn:#fff4e0;--warn-ink:#7a4b00}
-@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--muted:#9aa3b5;--line:#2e3542;--accent:#6ea1ff;--accent-soft:rgba(110,161,255,.13);--hit:#3cc884;--miss:#ff6b6b;--rect:#7d8699;--chip:#252c38;--band:rgba(60,200,132,.15);--warn:#3a2e17;--warn-ink:#ffd38a}}
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dde1e8;--accent:#2a6fdb;--accent-soft:rgba(42,111,219,.10);--hit:#16955a;--miss:#d64545;--rect:#8a93a6;--chip:#eef2f8;--band:rgba(22,149,90,.13)}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--muted:#9aa3b5;--line:#2e3542;--accent:#6ea1ff;--accent-soft:rgba(110,161,255,.13);--hit:#3cc884;--miss:#ff6b6b;--rect:#7d8699;--chip:#252c38;--band:rgba(60,200,132,.15)}}
 *{box-sizing:border-box}
-body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+body{margin:0;font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
 main{max-width:980px;margin:0 auto;padding:22px 16px 48px}
-h1{font-size:1.55rem;margin:0 0 2px;letter-spacing:-.01em}
-h2{font-size:1.05rem;margin:0 0 10px}
+h1{font-size:1.55rem;margin:0 0 2px;letter-spacing:-.01em;line-height:1.3}
+h2{font-size:1.05rem;margin:0 0 10px;line-height:1.35}
 h3{font-size:.98rem;margin:14px 0 6px}
-a{color:var(--accent)}
 .sub{color:var(--muted);margin:0 0 16px}
 .lead{color:var(--muted);margin:0 0 12px}
 .intro p{margin:0 0 8px}
@@ -22,10 +24,13 @@ a{color:var(--accent)}
 .tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer}
 .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.formula{font-family:"Cambria Math","Times New Roman",serif;font-size:1.15rem;background:var(--chip);padding:8px 12px;border-radius:8px;display:inline-block;margin:6px 0;max-width:100%;overflow-x:auto}
+/* Math: inline formulas keep the text size so lines stay evenly spaced; display formulas are centered blocks that scroll sideways on narrow screens. */
+.katex{font-size:1.05em}
+.formula{display:block;background:var(--chip);padding:6px 12px;border-radius:8px;margin:8px 0;overflow-x:auto;overflow-y:hidden;text-align:center}
+.formula .katex-display{margin:.4em 0}
+.formula .katex{font-size:1.15em}
 .muted{color:var(--muted)}
 .small{font-size:.88rem}
-.note{background:var(--warn);color:var(--warn-ink);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:.9rem}
 .plot{position:relative;width:100%;height:330px}
 .plot canvas{position:absolute;inset:0;width:100%;height:100%}
 #conv,#riem{width:100%;height:220px;display:block}
@@ -59,8 +64,7 @@ details{border-top:1px solid var(--line);padding:8px 0}
 details:last-child{border-bottom:1px solid var(--line)}
 summary{cursor:pointer;font-weight:600}
 details > *:not(summary){margin-top:8px}
-.foot{text-align:center;font-size:.85rem}
-@media (max-width:600px){.plot{height:260px}#conv,#riem{height:190px}h1{font-size:1.3rem}.stat.wide{grid-column:span 1}}
+@media (max-width:600px){.plot{height:260px}#conv,#riem{height:190px}h1{font-size:1.3rem}.stat.wide{grid-column:span 1}.formula .katex{font-size:1.05em}}
 </style>
 </head>
 <body>
@@ -71,7 +75,7 @@ details > *:not(summary){margin-top:8px}
   <section class="card intro">
     <h2>Objetivo y metodología</h2>
     <p>Esta aplicación calcula integrales definidas lanzando puntos al azar (método Monte Carlo) y compara el resultado con las sumas de Riemann.</p>
-    <p>El método se estudia en cuatro escenarios, de lo conocido a lo nuevo: primero se estima π y se valida el método con una integral que se resuelve a mano (∫ sen x); luego se aplica a una integral sin antiderivada elemental (e<sup>−x²</sup>) y, por último, a un problema real: el porcentaje de un grupo que alcanza una nota mínima.</p>
+    <p>El método se estudia en cuatro escenarios, de lo conocido a lo nuevo: primero se estima \(\pi\) y se valida el método con una integral que se resuelve a mano, \(\int_0^{\pi} \operatorname{sen} x\,dx\); luego se aplica a una integral sin antiderivada elemental, \(\int_0^2 e^{-x^2}\,dx\), y, por último, a un problema real: el porcentaje de un grupo que alcanza una nota mínima.</p>
     <p>En cada escenario se siguen tres pasos: <b>1</b> lanzar puntos y estimar la integral, <b>2</b> observar cómo converge la estimación y <b>3</b> compararla con las sumas de Riemann. Al final se explica el fundamento matemático del método.</p>
   </section>
 
@@ -81,7 +85,7 @@ details > *:not(summary){margin-top:8px}
 
   <section class="card">
     <h2>1 · Lanzamiento de puntos</h2>
-    <p class="lead">Se lanzan N puntos al azar, con distribución uniforme, dentro del rectángulo [a, b] × [0, h], donde h es el valor máximo de f en el intervalo. Se cuentan los que caen debajo de la curva (aciertos): la fracción de aciertos multiplicada por el área del rectángulo estima la integral. Junto a la estimación se muestran el error frente al valor de referencia y un intervalo de confianza del 95 %, que indica la precisión sin necesidad de conocer el valor exacto.</p>
+    <p class="lead">Se lanzan \(N\) puntos al azar, con distribución uniforme, dentro del rectángulo \([a,b]\times[0,h]\), donde \(h\) es el valor máximo de \(f\) en el intervalo. Se cuentan los que caen debajo de la curva (aciertos): la fracción de aciertos multiplicada por el área del rectángulo estima la integral. Junto a la estimación se muestran el error frente al valor de referencia y un intervalo de confianza del 95 %, que indica la precisión sin necesidad de conocer el valor exacto.</p>
     <div class="plot"><canvas id="base"></canvas><canvas id="pts"></canvas></div>
     <div class="legend">
       <span><span class="dot" style="background:var(--hit)"></span>Debajo de la curva (acierto)</span>
@@ -110,14 +114,14 @@ details > *:not(summary){margin-top:8px}
 
   <section class="card">
     <h2>2 · Convergencia: la estimación se acerca al valor de referencia</h2>
-    <p class="lead">Mientras se lanzan puntos, la estimación se registra cada vez que N crece cerca de un 3 % y se grafica contra N. Si el método funciona, la curva se acerca al valor de referencia y se mantiene dentro de una banda que se estrecha como 1/√N: esa es la velocidad de convergencia de Monte Carlo.</p>
+    <p class="lead">Mientras se lanzan puntos, la estimación se registra cada vez que \(N\) crece cerca de un 3 % y se grafica contra \(N\). Si el método funciona, la curva se acerca al valor de referencia y se mantiene dentro de una banda que se estrecha como \(1/\sqrt{N}\): esa es la velocidad de convergencia de Monte Carlo.</p>
     <canvas id="conv"></canvas>
-    <p class="muted small" style="margin:8px 0 0">Eje horizontal en escala logarítmica (1, 10, 100, 1 000…). La línea punteada es el valor de referencia. La <b>banda verde</b> es valor ± 1.96·σ/√N: la curva azul debería quedar dentro de ella cerca del 95 % del tiempo, y la banda se cierra como 1/√N.</p>
+    <p class="muted small" style="margin:8px 0 0">Eje horizontal en escala logarítmica (1, 10, 100, 1 000…). La línea punteada es el valor de referencia. La <b>banda verde</b> es el valor de referencia \(\pm\,1.96\,\sigma/\sqrt{N}\): la curva azul debería quedar dentro de ella cerca del 95 % del tiempo.</p>
   </section>
 
   <section class="card">
     <h2>3 · Comparación con sumas de Riemann</h2>
-    <p class="lead">La misma integral se aproxima con n rectángulos, tomando la altura en el extremo izquierdo, el derecho o el punto medio de cada subintervalo. La <b>carrera de métodos</b> compara los dos métodos con el mismo número de evaluaciones de f (n rectángulos frente a n puntos) y mide cuánto baja el error cuando n se multiplica por 10. Como Monte Carlo es aleatorio, su error se promedia en 20 corridas.</p>
+    <p class="lead">La misma integral se aproxima con \(n\) rectángulos, tomando la altura en el extremo izquierdo, el derecho o el punto medio de cada subintervalo. La <b>carrera de métodos</b> compara los dos métodos con el mismo número de evaluaciones de \(f\) (\(n\) rectángulos frente a \(n\) puntos) y mide cuánto baja el error cuando \(n\) se multiplica por 10. Como Monte Carlo es aleatorio, su error se promedia en 20 corridas.</p>
     <canvas id="riem"></canvas>
     <div class="controls">
       <label class="inline">Rectángulos n = <b id="nLbl">8</b> <input type="range" id="nR" min="1" max="100" value="8"></label>
@@ -138,11 +142,11 @@ details > *:not(summary){margin-top:8px}
     <h2>¿Cómo funciona?</h2>
     <p class="lead">Resumen del algoritmo que usa la aplicación en todos los escenarios.</p>
     <ol>
-      <li>Se encierra la región bajo la curva en un rectángulo de área conocida: base (b − a) y altura h.</li>
-      <li>Se generan N puntos aleatorios (x, y) dentro del rectángulo.</li>
-      <li>Un punto es <b>acierto</b> si y &lt; f(x), es decir, si cae debajo de la curva.</li>
+      <li>Se encierra la región bajo la curva en un rectángulo de área conocida: base \(b-a\) y altura \(h\).</li>
+      <li>Se generan \(N\) puntos aleatorios \((x, y)\) dentro del rectángulo.</li>
+      <li>Un punto es <b>acierto</b> si \(y &lt; f(x)\), es decir, si cae debajo de la curva.</li>
       <li>La fracción de aciertos aproxima, <b>en promedio</b>, la fracción del rectángulo que ocupa el área buscada:
-        <div class="formula">∫<sub>a</sub><sup>b</sup> f(x) dx ≈ (b − a) · h · aciertos / N</div></li>
+        <div class="formula">\[\int_a^b f(x)\,dx \;\approx\; (b-a)\cdot h\cdot \frac{\text{aciertos}}{N}\]</div></li>
       <li>Con más puntos, la estimación se acerca al valor real (ley de los grandes números), pero lentamente: para ganar 10× de precisión se necesitan unos 100× más puntos.</li>
       <li>Sin conocer el valor exacto, el intervalo de confianza del 95 % dice qué tan buena es la estimación usando solo los datos de la simulación.</li>
     </ol>
@@ -151,37 +155,40 @@ details > *:not(summary){margin-top:8px}
   <section class="card">
     <h2>Fundamento matemático: por qué contar dardos calcula una integral</h2>
     <p class="lead">Esta sección justifica el método: por qué la fracción de aciertos converge a la integral, de qué tamaño es el error y cuándo conviene usar Monte Carlo en lugar de las sumas de Riemann.</p>
-    <p class="muted small" style="margin-top:0">Notación: R = [a, b] × [0, h] es el rectángulo, |R| = (b − a)·h su área, I = ∫<sub>a</sub><sup>b</sup> f(x) dx la integral buscada y K el número de aciertos en N lanzamientos.</p>
+    <p class="muted small" style="margin-top:0">Notación: \(R=[a,b]\times[0,h]\) es el rectángulo, \(|R|=(b-a)\,h\) su área, \(I=\int_a^b f(x)\,dx\) la integral buscada y \(K\) el número de aciertos en \(N\) lanzamientos.</p>
     <details open>
       <summary>Demostración paso a paso</summary>
       <ol>
-        <li><b>Probabilidad uniforme = cociente de áreas.</b> Si el punto (X, Y) se escoge con distribución uniforme en R, la probabilidad de que caiga en una región D ⊂ R es área(D) / |R|.</li>
-        <li><b>El área bajo la curva es la integral.</b> La región de aciertos es D = {(x, y) : a ≤ x ≤ b, 0 ≤ y &lt; f(x)}. Como 0 ≤ f ≤ h, D cabe en R y su área es I. Por tanto
-          <div class="formula">p = P(acierto) = I / |R|</div>
-          Otra forma de verlo: si X = x, la probabilidad de acierto es f(x)/h, y X tiene densidad 1/(b − a). Entonces p = ∫<sub>a</sub><sup>b</sup> (f(x)/h)·(1/(b − a)) dx, que es la misma expresión.</li>
-        <li><b>El estimador es insesgado.</b> K ~ Binomial(N, p) y el estimador es Î = |R|·K/N. Entonces E[Î] = |R|·p = I: en promedio, el método da exactamente la integral.</li>
-        <li><b>La varianza explica el 1/√N.</b> Var(Î) = |R|²·p(1 − p)/N, así que la desviación estándar es
-          <div class="formula">σ(Î) = |R|·√(p(1 − p)) / √N</div>
-          Lo que baja como 1/N es la varianza; el error típico es su raíz cuadrada. Por eso 10× más precisión cuesta 100× más puntos.</li>
-        <li><b>Ley de los grandes números (con la desigualdad de Chebyshev).</b> P(|Î − I| ≥ ε) ≤ Var(Î)/ε² = |R|²·p(1 − p)/(N·ε²) → 0 cuando N → ∞. Esa es la justificación rigurosa de «entre más puntos, más se acerca».</li>
-        <li><b>Intervalo de confianza (teorema central del límite).</b> Para N grande, con p̂ = K/N,
-          <div class="formula">Î ± 1.96 · |R| · √(p̂(1 − p̂) / N)</div>
-          contiene a I con probabilidad cercana al 95 %. Solo usa datos de la simulación; el panel 1 lo muestra.</li>
+        <li><b>Probabilidad uniforme = cociente de áreas.</b> Si el punto \((X, Y)\) se escoge con distribución uniforme en \(R\), la probabilidad de que caiga en una región \(D\subset R\) es \(\text{área}(D)/|R|\).</li>
+        <li><b>El área bajo la curva es la integral.</b> La región de aciertos es \(D=\{(x,y) : a\le x\le b,\ 0\le y&lt;f(x)\}\). Como \(0\le f\le h\), \(D\) cabe en \(R\) y su área es \(I\). Por tanto
+          <div class="formula">\[p = P(\text{acierto}) = \frac{I}{|R|}\]</div>
+          Otra forma de verlo: si \(X=x\), la probabilidad de acierto es \(f(x)/h\), y \(X\) tiene densidad \(1/(b-a)\). Entonces
+          <div class="formula">\[p=\int_a^b \frac{f(x)}{h}\cdot\frac{1}{b-a}\,dx = \frac{I}{|R|}\]</div></li>
+        <li><b>El estimador es insesgado.</b> \(K\sim\text{Binomial}(N,p)\) y el estimador es \(\hat I=|R|\,K/N\). Entonces \(E[\hat I]=|R|\,p=I\): en promedio, el método da exactamente la integral.</li>
+        <li><b>La varianza explica el \(1/\sqrt{N}\).</b> \(\operatorname{Var}(\hat I)=|R|^2\,p(1-p)/N\), así que la desviación estándar es
+          <div class="formula">\[\sigma(\hat I)=\frac{|R|\,\sqrt{p(1-p)}}{\sqrt{N}}\]</div>
+          Lo que baja como \(1/N\) es la varianza; el error típico es su raíz cuadrada. Por eso 10× más precisión cuesta 100× más puntos.</li>
+        <li><b>Ley de los grandes números (con la desigualdad de Chebyshev).</b>
+          <div class="formula">\[P\big(|\hat I-I|\ge\varepsilon\big)\;\le\;\frac{\operatorname{Var}(\hat I)}{\varepsilon^2}\;=\;\frac{|R|^2\,p(1-p)}{N\,\varepsilon^2}\;\longrightarrow\;0 \quad\text{cuando } N\to\infty\]</div>
+          Esa es la justificación rigurosa de «entre más puntos, más se acerca».</li>
+        <li><b>Intervalo de confianza (teorema central del límite).</b> Para \(N\) grande, con \(\hat p=K/N\), el intervalo
+          <div class="formula">\[\hat I \;\pm\; 1.96\,|R|\,\sqrt{\frac{\hat p\,(1-\hat p)}{N}}\]</div>
+          contiene a \(I\) con probabilidad cercana al 95 %. Solo usa datos de la simulación; el panel 1 lo muestra.</li>
       </ol>
     </details>
     <details>
       <summary>¿Da lo mismo y &lt; f(x) que y ≤ f(x)?</summary>
-      <p>Sí. La gráfica de f es una curva, y una curva tiene área cero, así que la probabilidad de caer exactamente sobre ella es 0. Por el mismo motivo, en una variable continua P(X &gt; c) = P(X ≥ c).</p>
+      <p>Sí. La gráfica de \(f\) es una curva, y una curva tiene área cero, así que la probabilidad de caer exactamente sobre ella es 0. Por el mismo motivo, en una variable continua \(P(X&gt;c)=P(X\ge c)\).</p>
     </details>
     <details>
       <summary>¿Qué pasa si h no es el máximo de f?</summary>
-      <p>Si h es <b>menor</b> que el máximo, la parte de la región que queda por encima de h nunca se cuenta y el estimador queda sesgado hacia abajo, sin importar N. Si h es <b>mayor</b>, sigue siendo insesgado, pero p baja y el error relativo, √((1 − p)/(pN)), sube. En esta aplicación h es siempre el máximo de f en [a, b], también al mover los controles.</p>
+      <p>Si \(h\) es <b>menor</b> que el máximo, la parte de la región que queda por encima de \(h\) nunca se cuenta y el estimador queda sesgado hacia abajo, sin importar \(N\). Si \(h\) es <b>mayor</b>, sigue siendo insesgado, pero \(p\) baja y el error relativo, \(\sqrt{(1-p)/(pN)}\), sube. En esta aplicación \(h\) es siempre el máximo de \(f\) en \([a,b]\), también al mover los controles.</p>
     </details>
     <details>
       <summary>Una mejora: Monte Carlo de valor promedio</summary>
-      <p>Por el teorema del valor medio para integrales, I = (b − a)·f<sub>prom</sub>. Entonces se puede estimar</p>
-      <div class="formula">Î<sub>prom</sub> = (b − a) · (1/N) Σ f(x<sub>i</sub>),  con x<sub>i</sub> uniformes en [a, b]</div>
-      <p>Esto es una <b>suma de Riemann con puntos de muestra al azar</b>: el puente entre las dos mitades del proyecto. No necesita h ni la coordenada y, que solo agrega ruido. Con el mismo N tiene menos varianza que los dardos:</p>
+      <p>Por el teorema del valor medio para integrales, \(I=(b-a)\,f_{\text{prom}}\). Entonces se puede estimar</p>
+      <div class="formula">\[\hat I_{\text{prom}} = (b-a)\,\frac{1}{N}\sum_{i=1}^{N} f(x_i), \qquad x_i \text{ uniformes en } [a,b]\]</div>
+      <p>Esto es una <b>suma de Riemann con puntos de muestra al azar</b>: el puente entre las dos mitades del proyecto. No necesita \(h\) ni la coordenada \(y\), que solo agrega ruido. Con el mismo \(N\) tiene menos varianza que los dardos:</p>
       <div class="tw"><table>
         <tr><th>Escenario</th><th>Var(dardos) / Var(valor promedio)</th></tr>
         <tr><td>π</td><td>3.38</td></tr>
@@ -193,19 +200,21 @@ details > *:not(summary){margin-top:8px}
     </details>
     <details>
       <summary>Si Riemann gana, ¿para qué sirve Monte Carlo?</summary>
-      <p>El error de Monte Carlo es de orden N<sup>−1/2</sup> sin importar el número de variables d (la constante sí puede cambiar). Una malla de punto medio con N puntos en total en d dimensiones tiene error de orden N<sup>−2/d</sup>. Monte Carlo gana en orden cuando 1/2 &gt; 2/d, es decir, <b>cuando d &gt; 4</b>. Ejemplos reales: el renderizado 3D (integrales sobre direcciones de luz), la valoración de opciones financieras y los modelos probabilísticos en inteligencia artificial.</p>
+      <p>El error de Monte Carlo es de orden \(N^{-1/2}\) sin importar el número de variables \(d\) (la constante sí puede cambiar). Una malla de punto medio con \(N\) puntos en total en \(d\) dimensiones tiene error de orden \(N^{-2/d}\). Monte Carlo gana en orden cuando \(1/2 &gt; 2/d\), es decir, <b>cuando \(d&gt;4\)</b>. Ejemplos reales: el renderizado 3D (integrales sobre direcciones de luz), la valoración de opciones financieras y los modelos probabilísticos en inteligencia artificial.</p>
     </details>
     <details>
       <summary>Números pseudoaleatorios</summary>
-      <p>La aplicación usa el generador del navegador (<code>Math.random</code>), sin semilla: los resultados cambian en cada ejecución y no se repiten dígito por dígito. Lo que se mantiene es el comportamiento: el error baja como 1/√N y la estimación queda dentro del intervalo de confianza cerca del 95 % de las veces.</p>
+      <p>La aplicación usa el generador del navegador (<code>Math.random</code>), sin semilla: los resultados cambian en cada ejecución y no se repiten dígito por dígito. Lo que se mantiene es el comportamiento: el error baja como \(1/\sqrt{N}\) y la estimación queda dentro del intervalo de confianza cerca del 95 % de las veces.</p>
     </details>
   </section>
-
-  <p class="muted foot">Versión 2 · <a href="v1/">Ver la versión 1 (original)</a></p>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
+// Raw template tag: lets TeX backslashes (\int, \frac…) be written as-is inside template strings.
+const tex = String.raw;
+// Renders \( … \) and \[ … \] formulas inside an element with KaTeX (no-op if the CDN failed to load).
+const math = el => { if (window.renderMathInElement) renderMathInElement(el, { delimiters: [{ left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }], throwOnError: false }); };
 const SQ2PI = Math.sqrt(2 * Math.PI);
 const P = { mu: 3.5, sigma: 0.6, c: 4.0 };
 const pdf = x => Math.exp(-((x - P.mu) ** 2) / (2 * P.sigma ** 2)) / (P.sigma * SQ2PI);
@@ -229,22 +238,22 @@ const MODES = {
   pi: {
     tab: 'Estimar π',
     label: 'π',
-    info: () => `<h2>Estimar π con un cuarto de círculo</h2>
-      <p>El cuarto de círculo de radio 1 tiene área π/4. Si lanzamos puntos al azar dentro del cuadrado 1 × 1, la fracción que cae dentro del círculo se acerca a π/4.</p>
-      <div class="formula">π = 4 · ∫<sub>0</sub><sup>1</sup> √(1 − x²) dx</div>
-      <p class="muted small">Un detalle importante: la pendiente de esta curva es vertical en x = 1, porque f′(x) = −x/√(1 − x²) → −∞. Por eso aquí el error del punto medio no baja como 1/n² sino como n<sup>−3/2</sup> (míralo en la carrera de métodos).</p>`,
-    ref: 'π es una constante conocida; se usa el valor de <code>Math.PI</code> con 16 cifras.',
-    riem: 'f(x) = √(1 − x²) es decreciente: la suma izquierda sobreestima y la derecha subestima. El punto medio mejora como n<sup>−3/2</sup> y no como 1/n²: la cota |E<sub>M</sub>| ≤ K(b − a)³/(24n²) exige |f″| ≤ K, y aquí f″ no está acotada cerca de x = 1.',
+    info: () => tex`<h2>Estimar π con un cuarto de círculo</h2>
+      <p>El cuarto de círculo de radio 1 tiene área \(\pi/4\). Si lanzamos puntos al azar dentro del cuadrado \(1\times 1\), la fracción que cae dentro del círculo se acerca a \(\pi/4\).</p>
+      <div class="formula">\[\pi = 4\int_0^1 \sqrt{1-x^2}\,dx\]</div>
+      <p class="muted small">Un detalle importante: la pendiente de esta curva es vertical en \(x=1\), porque \(f'(x)=-x/\sqrt{1-x^2}\to-\infty\). Por eso aquí el error del punto medio no baja como \(1/n^2\) sino como \(n^{-3/2}\) (míralo en la carrera de métodos).</p>`,
+    ref: tex`\(\pi\) es una constante conocida; se usa el valor de <code>Math.PI</code> con 16 cifras.`,
+    riem: tex`\(f(x)=\sqrt{1-x^2}\) es decreciente: la suma izquierda sobreestima y la derecha subestima. El punto medio mejora como \(n^{-3/2}\) y no como \(1/n^2\): la cota \(|E_M|\le K(b-a)^3/(24n^2)\) exige \(|f''|\le K\), y aquí \(f''\) no está acotada cerca de \(x=1\).`,
     cfg: () => ({ f: x => Math.sqrt(Math.max(0, 1 - x * x)), a: 0, b: 1, h: 1, scale: 4, exact: Math.PI, xmin: 0, xmax: 1, ymax: 1.08, pct: false })
   },
   sen: {
     tab: 'Validar: ∫ sen x',
     label: 'Área',
-    info: () => `<h2>Validación con una integral conocida</h2>
+    info: () => tex`<h2>Validación con una integral conocida</h2>
       <p>Esta integral se resuelve a mano con el teorema fundamental del cálculo. Sirve para comprobar que el método funciona antes de usarlo en un caso que no se puede resolver a mano.</p>
-      <div class="formula">∫<sub>0</sub><sup>π</sup> sen x dx = [−cos x]<sub>0</sub><sup>π</sup> = 1 − (−1) = 2</div>`,
+      <div class="formula">\[\int_0^{\pi} \operatorname{sen} x\,dx = \Big[-\cos x\Big]_0^{\pi} = 1-(-1) = 2\]</div>`,
     ref: 'El valor 2 se calcula a mano con el teorema fundamental del cálculo.',
-    riem: 'Aquí la suma izquierda y la derecha dan exactamente lo mismo, y no es un error: R − L = Δx·(f(b) − f(a)) = Δx·(sen π − sen 0) = 0. Cuando f(a) = f(b), las dos coinciden con la regla del trapecio; por eso su error baja como 1/n² y no como 1/n.',
+    riem: tex`Aquí la suma izquierda \(S_I\) y la derecha \(S_D\) dan exactamente lo mismo, y no es un error: \(S_D-S_I=\Delta x\,\big(f(b)-f(a)\big)=\Delta x\,(\operatorname{sen}\pi-\operatorname{sen}0)=0\). Cuando \(f(a)=f(b)\), las dos coinciden con la regla del trapecio; por eso su error baja como \(1/n^2\) y no como \(1/n\).`,
     cfg: () => ({ f: Math.sin, a: 0, b: Math.PI, h: 1, scale: 1, exact: 2, xmin: 0, xmax: Math.PI, ymax: 1.08, pct: false })
   },
   gauss: {
@@ -252,33 +261,33 @@ const MODES = {
     label: 'Área',
     info: () => {
       const rows = [5, 10, 15, 20, 25, 30].map(k => { const s = gaussSeries(2, k), e = Math.abs(s - GAUSS_REF); return `<tr><td>${k}</td><td>${s.toFixed(12)}</td><td>${e === 0 ? '0' : e.toExponential(1)}</td></tr>`; }).join('');
-      return `<h2>Una integral sin antiderivada elemental</h2>
-      <p>La función e<sup>−x²</sup> sí tiene antiderivada: por el teorema fundamental del cálculo, F(x) = ∫<sub>0</sub><sup>x</sup> e<sup>−t²</sup> dt existe porque la función es continua. Lo que no existe es una fórmula para F con funciones <b>elementales</b> (polinomios, exponenciales, logaritmos, funciones trigonométricas y sus combinaciones). Esto es un teorema (Liouville, siglo XIX); no se debe al cuadrado del exponente, porque x·e<sup>−x²</sup> también lo tiene y su antiderivada es −½·e<sup>−x²</sup>.</p>
+      return tex`<h2>Una integral sin antiderivada elemental</h2>
+      <p>La función \(e^{-x^2}\) sí tiene antiderivada: por el teorema fundamental del cálculo, \(F(x)=\int_0^x e^{-t^2}\,dt\) existe porque la función es continua. Lo que no existe es una fórmula para \(F\) con funciones <b>elementales</b> (polinomios, exponenciales, logaritmos, funciones trigonométricas y sus combinaciones). Esto es un teorema (Liouville, siglo XIX); no se debe al cuadrado del exponente, porque \(x\,e^{-x^2}\) también lo tiene y su antiderivada es \(-\tfrac{1}{2}e^{-x^2}\).</p>
       <p>Así que la regla de Barrow no sirve y hay que <b>aproximar</b>: con series de potencias, con sumas de Riemann o con Monte Carlo.</p>
-      <div class="formula">∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx ≈ 0.882081</div>
+      <div class="formula">\[\int_0^2 e^{-x^2}\,dx \approx 0.882081\]</div>
       <h3>Con series de potencias (Cálculo II)</h3>
-      <p>Como e<sup>u</sup> = Σ u<sup>k</sup>/k!, se cambia u por −x² y se integra término a término:</p>
-      <div class="formula">∫<sub>0</sub><sup>2</sup> e<sup>−x²</sup> dx = Σ<sub>k≥0</sub> (−1)<sup>k</sup> · 2<sup>2k+1</sup> / (k! · (2k + 1))</div>
+      <p>Como \(e^u=\sum_{k\ge 0} u^k/k!\), se cambia \(u\) por \(-x^2\) y se integra término a término:</p>
+      <div class="formula">\[\int_0^2 e^{-x^2}\,dx = \sum_{k=0}^{\infty} \frac{(-1)^k\,2^{2k+1}}{k!\,(2k+1)}\]</div>
       <div class="tw"><table><tr><th>Términos sumados</th><th>Suma parcial</th><th>Error</th></tr>${rows}</table></div>
       <p class="muted small">Con 30 términos la serie alcanza la precisión de la computadora. Ese es el valor de referencia de esta pestaña.</p>`;
     },
-    ref: 'Valor de referencia calculado con la serie de Maclaurin de e<sup>−x²</sup> integrada término a término (40 términos). Coincide con (√π/2)·erf(2) = 0.8820813907624…',
-    riem: 'f es decreciente en [0, 2]: la suma izquierda sobreestima y la derecha subestima, con error ≈ |f(b) − f(a)|·(b − a)/(2n), de orden 1/n. El punto medio tiene error de orden 1/n² porque f″ está acotada.',
+    ref: tex`Valor de referencia calculado con la serie de Maclaurin de \(e^{-x^2}\) integrada término a término (40 términos). Coincide con \((\sqrt{\pi}/2)\,\operatorname{erf}(2)=0.8820813907624\ldots\)`,
+    riem: tex`\(f\) es decreciente en \([0,2]\): la suma izquierda sobreestima y la derecha subestima, con error \(\approx|f(b)-f(a)|\,(b-a)/(2n)\), de orden \(1/n\). El punto medio tiene error de orden \(1/n^2\) porque \(f''\) está acotada.`,
     cfg: () => ({ f: x => Math.exp(-x * x), a: 0, b: 2, h: 1, scale: 1, exact: GAUSS_REF, xmin: -2.5, xmax: 2.5, ymax: 1.08, pct: false })
   },
   notas: {
     tab: 'Aplicación: notas',
     label: 'P',
-    info: () => `<h2>¿Qué porcentaje del grupo saca ${P.c.toFixed(1)} o más?</h2>
-      <p>Si las notas (de 0 a 5) siguen una campana de Gauss con media μ y desviación σ, la probabilidad de sacar al menos la nota c es un <b>área bajo la curva de densidad</b>. Como la variable es continua, «más de c» y «c o más» dan lo mismo.</p>
+    info: () => tex`<h2>¿Qué porcentaje del grupo saca ${P.c.toFixed(1)} o más?</h2>
+      <p>Si las notas (de 0 a 5) siguen una campana de Gauss con media \(\mu\) y desviación \(\sigma\), la probabilidad de sacar al menos la nota \(c\) es un <b>área bajo la curva de densidad</b>. Como la variable es continua, «más de \(c\)» y «\(c\) o más» dan lo mismo.</p>
       <div class="sliders">
         <label>Media μ = <b id="muL">${P.mu.toFixed(1)}</b><input type="range" id="mu" min="2.5" max="4.5" step="0.1" value="${P.mu}"></label>
         <label>Desviación σ = <b id="sgL">${P.sigma.toFixed(2)}</b><input type="range" id="sg" min="0.2" max="1.2" step="0.05" value="${P.sigma}"></label>
         <label>Nota mínima c = <b id="cL">${P.c.toFixed(1)}</b><input type="range" id="cc" min="3.0" max="4.8" step="0.1" value="${P.c}"></label>
       </div>
       <div id="notasExtra"></div>`,
-    ref: 'Valor de referencia calculado con la regla de Simpson con 200 000 subintervalos (error menor que 10<sup>−12</sup>). Se usa Simpson, y no el punto medio, para no comparar las sumas de Riemann consigo mismas.',
-    riem: 'Las sumas usan la misma función que la simulación: la densidad truncada f(x)/Z.',
+    ref: tex`Valor de referencia calculado con la regla de Simpson con 200 000 subintervalos (error menor que \(10^{-12}\)). Se usa Simpson, y no el punto medio, para no comparar las sumas de Riemann consigo mismas.`,
+    riem: tex`Las sumas usan la misma función que la simulación: la densidad truncada \(f(x)/Z\).`,
     cfg: () => {
       const m = notasModel();
       const g = x => pdf(x) / m.Z;
@@ -365,7 +374,6 @@ function updateStats() {
   $('sN').textContent = fmtInt(N);
   $('sH').textContent = fmtInt(hits);
   $('sR').textContent = fmt(C.exact);
-  $('refNote').innerHTML = '<b>Valor de referencia:</b> ' + MODES[mode].ref;
   if (!N) { $('sE').textContent = '—'; $('sErr').textContent = '—'; $('sCI').textContent = '—'; $('step').innerHTML = 'Presiona <b>Animar</b> o lanza puntos para empezar.'; return; }
   const e = estimate(), err = Math.abs(e - C.exact);
   $('sE').textContent = fmt(e);
@@ -434,7 +442,6 @@ function drawRiemann() {
   drawCurve(ctx, F, C.f, C.xmin, C.xmax);
   const r = riemann(n, m);
   $('rV').textContent = fmt(r); $('rE').textContent = fmtErr(Math.abs(r - C.exact));
-  $('riemNote').innerHTML = MODES[mode].riem;
 }
 // Observed order = slope in log-log scale between two consecutive rows (n multiplied by 10).
 const order = (prev, cur) => {
@@ -455,9 +462,10 @@ function race() {
       rows += `<tr><td>${fmtInt(n)}</td><td class="${er <= em ? 'win' : ''}">${fmtErr(er)}</td><td>${pr ? order(pr, er) : '—'}</td><td class="${em < er ? 'win' : ''}">${fmtErr(em)}</td><td>${fmtErr(s1 / Math.sqrt(n))}</td><td>${pm ? order(pm, em) : '—'}</td></tr>`;
       pr = er; pm = em;
     }
-    $('race').innerHTML = `<div class="tw"><table><tr><th>n (rectángulos o puntos)</th><th>Error Riemann (punto medio)</th><th>Orden</th><th>Error Monte Carlo (RMSE, ${runs} corridas)</th><th>Teoría σ/√n</th><th>Orden</th></tr>${rows}</table></div>
-      <p class="muted small" style="margin:8px 0 0"><b>Orden</b> es la pendiente en escala log–log: cuántas potencias de 10 baja el error cuando n se multiplica por 10. Lo esperado es −2 para el punto medio (−1.5 en el escenario de π, porque f″ no está acotada) y −0.5 para Monte Carlo. El RMSE (raíz del error cuadrático medio) de Monte Carlo debe parecerse a la columna «Teoría».</p>
-      <p class="muted small" style="margin:8px 0 0">En una sola variable, Riemann gana con mucha ventaja. Monte Carlo mejora más despacio (10× más precisión ≈ 100× más puntos), pero su orden N<sup>−1/2</sup> no depende del número de variables d, mientras que el de una malla de punto medio es N<sup>−2/d</sup>: a partir de d &gt; 4 Monte Carlo gana. Por eso se usa en gráficos 3D, finanzas e inteligencia artificial.</p>`;
+    $('race').innerHTML = tex`<div class="tw"><table><tr><th>n (rectángulos o puntos)</th><th>Error Riemann (punto medio)</th><th>Orden</th><th>Error Monte Carlo (RMSE, ${runs} corridas)</th><th>Teoría σ/√n</th><th>Orden</th></tr>${rows}</table></div>
+      <p class="muted small" style="margin:8px 0 0"><b>Orden</b> es la pendiente en escala log–log: cuántas potencias de 10 baja el error cuando \(n\) se multiplica por 10. Lo esperado es \(-2\) para el punto medio (\(-1.5\) en el escenario de \(\pi\), porque \(f''\) no está acotada) y \(-0.5\) para Monte Carlo. El RMSE (raíz del error cuadrático medio) de Monte Carlo debe parecerse a la columna «Teoría».</p>
+      <p class="muted small" style="margin:8px 0 0">En una sola variable, Riemann gana con mucha ventaja. Monte Carlo mejora más despacio (10× más precisión ≈ 100× más puntos), pero su orden \(N^{-1/2}\) no depende del número de variables \(d\), mientras que el de una malla de punto medio es \(N^{-2/d}\): a partir de \(d&gt;4\) Monte Carlo gana. Por eso se usa en gráficos 3D, finanzas e inteligencia artificial.</p>`;
+    math($('race'));
   }, 30);
 }
 
@@ -465,14 +473,17 @@ function race() {
 function reset() { N = 0; hits = 0; ptsStore = []; hist = []; nextRec = 1; drawBase(); updateStats(); drawConv(); $('race').innerHTML = ''; }
 function updNotas() {
   const m = C.m;
-  $('notasExtra').innerHTML = `<div class="formula">P(nota ≥ c) = ∫<sub>c</sub><sup>5</sup> f(x) dx / ∫<sub>0</sub><sup>5</sup> f(x) dx</div>
-    <p class="muted small">f es la densidad normal 1/(σ√2π)·e<sup>−(x−μ)²/(2σ²)</sup>. Como las notas solo van de 0 a 5, la normal se <b>trunca</b> a ese intervalo: con estos controles asigna ${pp(m.above)} de probabilidad a notas mayores que 5 y ${pp(m.below)} a notas menores que 0, que no existen. Al dividir entre Z = ∫<sub>0</sub><sup>5</sup> f(x) dx = ${Z4(m.Z)}, el área total en [0, 5] es 1, como exige una densidad. La curva dibujada es f(x)/Z, y la integral del numerador es la que se estima con Monte Carlo.</p>`;
+  $('notasExtra').innerHTML = tex`<div class="formula">\[P(\text{nota}\ge c) = \frac{\int_c^5 f(x)\,dx}{\int_0^5 f(x)\,dx}, \qquad f(x)=\frac{1}{\sigma\sqrt{2\pi}}\,e^{-(x-\mu)^2/(2\sigma^2)}\]</div>
+    <p class="muted small">\(f\) es la densidad normal. Como las notas solo van de 0 a 5, la normal se <b>trunca</b> a ese intervalo: con estos controles asigna ${pp(m.above)} de probabilidad a notas mayores que 5 y ${pp(m.below)} a notas menores que 0, que no existen. Al dividir entre \(Z=\int_0^5 f(x)\,dx = ${Z4(m.Z)}\), el área total en \([0,5]\) es 1, como exige una densidad. La curva dibujada es \(f(x)/Z\), y la integral del numerador es la que se estima con Monte Carlo.</p>`;
+  math($('notasExtra'));
 }
 const Z4 = v => v.toFixed(4);
 function setMode(m) {
   mode = m; C = MODES[m].cfg();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   $('info').innerHTML = MODES[m].info();
+  $('refNote').innerHTML = '<b>Valor de referencia:</b> ' + MODES[m].ref;
+  $('riemNote').innerHTML = MODES[m].riem;
   if (m === 'notas') {
     const refresh = () => {
       C = MODES.notas.cfg(); $('info').querySelector('h2').textContent = `¿Qué porcentaje del grupo saca ${P.c.toFixed(1)} o más?`;
@@ -482,6 +493,7 @@ function setMode(m) {
     bind('mu', 'mu', 'muL', 1); bind('sg', 'sigma', 'sgL', 2); bind('cc', 'c', 'cL', 1);
     updNotas();
   }
+  math($('info')); math($('refNote')); math($('riemNote'));
   reset(); drawRiemann();
 }
 Object.entries(MODES).forEach(([k, v]) => { const b = document.createElement('button'); b.textContent = v.tab; b.dataset.m = k; b.onclick = () => setMode(k); $('tabs').appendChild(b); });
@@ -494,6 +506,8 @@ $('play').onclick = () => { if (running) stop(); else { running = true; $('play'
 $('nR').oninput = drawRiemann; $('mR').onchange = drawRiemann;
 $('raceBtn').onclick = race;
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawBase(); drawConv(); drawRiemann(); }, 120); });
+// Static formulas: render every section except the dynamic ones, which setMode/race/updNotas render when they change.
+document.querySelectorAll('main > section.card:not(#info)').forEach(math);
 setMode('pi');
 </script>
 </body>
